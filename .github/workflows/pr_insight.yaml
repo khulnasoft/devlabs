@@ -1,4 +1,4 @@
-name: pr-assistant
+name: pr-insight
 
 on: workflow_dispatch
 #   pull_request:
@@ -6,11 +6,11 @@ on: workflow_dispatch
 jobs:
   pr_assistant_job:
     runs-on: ubuntu-latest
-    name: Run pr assistant on every pull request, respond to user comments
+    name: Run pr insight on every pull request, respond to user comments
     steps:
-      - name: PR Assistant action step
+      - name: PR Insight action step
         id: prassistant
-        uses: khulnasoft/pr-assistant@main
+        uses: khulnasoft/pr-insight@main
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           OPENAI_ORG: ${{ secrets.OPENAI_ORG }}
