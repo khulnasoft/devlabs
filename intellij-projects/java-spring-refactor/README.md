@@ -24,7 +24,7 @@ Follow along with the companion video [Codebase Resurrection: Revive and Refacto
 1. Clone this repository to your local development environment.
 
    ```shell
-   git clone git@github.com:Codium-ai/devlabs.git
+   git clone git@github.com:KhulnaSoft/devlabs.git
    cd devlabs/intellij-projects/java-spring-refactor
    ```
 ## Resources
