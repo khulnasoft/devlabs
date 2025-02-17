@@ -37,11 +37,11 @@ jobs:
           cd intellij-projects/coverage-ai/
           chmod +x gradlew
 
-      - name: Build and Test Cover Agent Plugin
+      - name: Build and Test Coverage Ai Plugin
         working-directory: intellij-projects/coverage-ai/coverage-ai-plugin
         run: ../gradlew clean build --stacktrace --info
 
-      - name: Run Check for Cover Agent Plugin
+      - name: Run Check for Coverage Ai Plugin
         working-directory: intellij-projects/coverage-ai/coverage-ai-plugin
         run: ../gradlew check
 
