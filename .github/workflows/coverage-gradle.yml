@@ -7,7 +7,7 @@ on:
   pull_request:
     branches:
       - main
-    paths: coverage-ai/*
+    paths: intellij-projects/coverage-ai/*
 
 jobs:
   build:
@@ -35,15 +35,15 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build and Test Cover Agent Plugin
-        working-directory: cover-agent-plugin
+        working-directory: coverage-ai-plugin
         run: ../gradlew clean build --stacktrace --info
 
       - name: Run Check for Cover Agent Plugin
-        working-directory: cover-agent-plugin
+        working-directory: coverage-ai-plugin
         run: ../gradlew check
 
       - name: Generate Jacoco Coverage Report
-        working-directory: cover-agent-plugin
+        working-directory: coverage-ai-plugin
         run: ../gradlew jacocoTestReport
 
       - name: Upload Test Results
@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: test-results
-          path: cover-agent-plugin/build/reports
+          path: coverage-ai-plugin/build/reports
 
       - name: Upload Code Coverage Report
         if: always()
