@@ -1,39 +1,7 @@
-import crypto from 'crypto';
-
 /**
  * Database.js
  * Backend localstorage connector
  */
-
-const ENCRYPTION_KEY = 'your-encryption-key'; // Replace with your actual encryption key
-const IV_LENGTH = 16;
-
-function encrypt(text) {
-  if (!text) {
-    throw new Error('Input text cannot be null or empty');
-  }
-  text = text.toString();
-  let iv = crypto.randomBytes(IV_LENGTH);
-  let cipher = crypto.createCipheriv('aes-256-cbc', crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32), iv);
-  let encrypted = cipher.update(text);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString('hex') + ':' + encrypted.toString('hex');
-}
-
-function decrypt(text) {
-  try {
-    let textParts = text.split(':');
-    let iv = Buffer.from(textParts.shift(), 'hex');
-    let encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
-  } catch (error) {
-    console.error('Decryption failed:', error);
-    return null;
-  }
-}
 
 class Database {
   constructor() {
@@ -43,8 +11,7 @@ class Database {
       if (key === undefined || value === undefined) {
         throw new Error("Database key and value must be declared");
       }
-      const encryptedValue = encrypt(value);
-      localStorage.setItem(key, encryptedValue);
+      localStorage.setItem(key, value);
     };
 
     this.delete = (key) => {
@@ -59,11 +26,7 @@ class Database {
     };
 
     this.get = key => {
-      const encryptedValue = localStorage.getItem(key);
-      if (encryptedValue) {
-        return decrypt(encryptedValue);
-      }
-      return null;
+      return localStorage.getItem(key);
     };
 
     this.countItems = () => {
