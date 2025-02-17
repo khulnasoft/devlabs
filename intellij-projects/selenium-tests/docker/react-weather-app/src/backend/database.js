@@ -9,6 +9,10 @@ const ENCRYPTION_KEY = 'your-encryption-key'; // Replace with your actual encryp
 const IV_LENGTH = 16;
 
 function encrypt(text) {
+  if (!text) {
+    throw new Error('Input text cannot be null or empty');
+  }
+  text = text.toString();
   let iv = crypto.randomBytes(IV_LENGTH);
   let cipher = crypto.createCipheriv('aes-256-cbc', crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32), iv);
   let encrypted = cipher.update(text);
