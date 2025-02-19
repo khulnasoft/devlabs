@@ -1,0 +1,91 @@
+
+
+test {
+    ignoreFailures = false
+}
+
+checkstyle {
+    toolVersion '8.36.1'
+}
+
+checkstyleMain {
+    ignoreFailures = false
+}
+
+checkstyleTest {
+    ignoreFailures = true
+}
+
+
+pmdMain {
+    ignoreFailures = false
+    ruleSets = []
+    ruleSetFiles = files("${project.projectDir}/config/pmd/pmd-ruleset.xml")
+    excludes = ['BeanMembersShouldSerialize', 'LoosePackageCoupling']
+}
+
+pmdTest {
+    ignoreFailures = true
+    ruleSets = []
+    ruleSetFiles = files("${project.projectDir}/config/pmd/pmd-ruleset.xml")
+    excludes = ['BeanMembersShouldSerialize', 'LoosePackageCoupling']
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+jacocoTestReport {
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: ['com/khulnasoft/coverage/plugin/CoverageAiPlugin',
+                                        'com/khulnasoft/coverage/plugin/CoverageAiTask',
+                                        'com/khulnasoft/coverage/plugin/CoverageAi',
+                                        'com/khulnasoft/coverage/plugin/CoverageAiBuilder',
+                                        'com/khulnasoft/coverage/plugin/CoverageAiExtension',
+                                        'com/khulnasoft/coverage/plugin/CoverError',
+                                        'com/khulnasoft/coverage/plugin/ModelPrompter',
+                                        'com/khulnasoft/coverage/plugin/SourceFilePrompt',
+                                        'com/khulnasoft/coverage/plugin/TestInfoResponse',
+                                        'com/khulnasoft/coverage/plugin/CoverageAiExecutor'])
+        }))
+    }
+    reports {
+        xml.required.set(true) // Instead of xml.enabled = false
+        html.required.set(true)  // Instead of html.enabled = true
+        html.outputLocation.set(file("${buildDir}/jacocoHtml")) // Instead of html.destination
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            excludes = [
+                    'com.khulnasoft.coverage.plugin.CoverageAiPlugin',
+                    'com.khulnasoft.coverage.plugin.CoverageAiTask',
+                    'sun.util.resources.cldr.provider.CLDRLocaleDataMetaInfo',
+                    'com.khulnasoft.coverage.plugin.CoverageAi',
+                    'com.khulnasoft.coverage.plugin.CoverageAiBuilder',
+                    'com.khulnasoft.coverage.plugin.CoverageAiExtension',
+                    'com.khulnasoft.coverage.plugin.CoverError',
+                    'com.khulnasoft.coverage.plugin.ModelPrompter',
+                    'com.khulnasoft.coverage.plugin.SourceFilePrompt',
+                    'com.khulnasoft.coverage.plugin.TestInfoResponse',
+                    'com.khulnasoft.coverage.plugin.CoverageAiExecutor'
+
+            ]
+            element = 'CLASS'
+            limit {
+                counter = 'INSTRUCTION'
+                value = 'COVEREDRATIO'
+                minimum = new Double(classCoverage)
+            }
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = new Double(branchCoverage)
+            }
+        }
+    }
+}
+
+check.finalizedBy jacocoTestReport, jacocoTestCoverageVerification
