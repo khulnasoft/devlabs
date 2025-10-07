@@ -66,7 +66,7 @@ if ! ls $SH_FILE_DIR &> /dev/null; then
   ZIP_FILE="${BASE_FILE_NAME}-*.zip"
   unzip -qq ${ZIP_FILE}
 fi
-cd $(find khulnasoft-* -type d | head -1)
+cd "$(find khulnasoft-* -type d | head -1)"
 
 SQ_HOME=$(pwd)
 cd "$ROOT"
