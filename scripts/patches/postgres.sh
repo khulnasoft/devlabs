@@ -4,6 +4,11 @@ set -euo pipefail
 
 source scripts/property_utils.sh
 
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <SQ_HOME>" >&2
+  exit 1
+fi
+
 SQ_HOME=$1
 
 echo "configuring postgres"
