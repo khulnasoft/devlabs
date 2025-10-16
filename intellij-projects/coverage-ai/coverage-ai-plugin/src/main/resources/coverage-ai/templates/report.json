@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "generatedAt": "{{generatedDate}}",
+    "projectName": "{{projectName}}",
+    "pluginVersion": "{{pluginVersion}}",
+    "analysisVersion": "1.0.0"
+  },
+  "coverage": {
+    "overall": {{overallCoverage}},
+    "line": {{lineCoverage}},
+    "branch": {{branchCoverage}},
+    "method": {{methodCoverage}},
+    "class": {{classCoverage}}
+  },
+  "metrics": {
+    "totalLines": {{totalLines}},
+    "coveredLines": {{coveredLines}},
+    "uncoveredLines": {{uncoveredLines}},
+    "totalBranches": {{totalBranches}},
+    "coveredBranches": {{coveredBranches}},
+    "uncoveredBranches": {{uncoveredBranches}},
+    "totalMethods": {{totalMethods}},
+    "coveredMethods": {{coveredMethods}},
+    "uncoveredMethods": {{uncoveredMethods}},
+    "totalClasses": {{totalClasses}},
+    "coveredClasses": {{coveredClasses}},
+    "uncoveredClasses": {{uncoveredClasses}}
+  },
+  "suggestions": [
+    {{#suggestions}}
+    {
+      "id": "{{id}}",
+      "priority": "{{priority}}",
+      "category": "{{category}}",
+      "title": "{{title}}",
+      "description": "{{description}}",
+      "file": "{{file}}",
+      "line": {{line}},
+      "effort": "{{effort}}",
+      "impact": "{{impact}}",
+      "codeSnippet": "{{codeSnippet}}",
+      "recommendedTest": "{{recommendedTest}}"
+    }{{^last}},{{/last}}
+    {{/suggestions}}
+  ],
+  "files": [
+    {{#files}}
+    {
+      "name": "{{name}}",
+      "package": "{{package}}",
+      "lineCoverage": {{lineCoverage}},
+      "branchCoverage": {{branchCoverage}},
+      "uncoveredLines": [{{uncoveredLines}}],
+      "complexity": {{complexity}}
+    }{{^last}},{{/last}}
+    {{/files}}
+  ],
+  "configuration": {
+    "coverageThreshold": {{coverageThreshold}},
+    "branchCoverageThreshold": {{branchCoverageThreshold}},
+    "exclusions": {
+      "packages": [{{#exclusions.packages}}"{{.}}"{{^last}}, {{/last}}{{/exclusions.packages}}],
+      "classes": [{{#exclusions.classes}}"{{.}}"{{^last}}, {{/last}}{{/exclusions.classes}}],
+      "methods": [{{#exclusions.methods}}"{{.}}"{{^last}}, {{/last}}{{/exclusions.methods}}]
+    }
+  }
+}

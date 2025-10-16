@@ -1,0 +1,77 @@
+# Version catalog for centralized dependency management
+[versions]
+# Gradle & Build Tools
+gradle = "8.10.2"
+kotlin = "1.9.24"
+
+# Core Java Libraries
+jackson = "2.17.2"
+slf4j = "2.0.9"
+logback = "1.4.14"
+
+# Spring Boot & Ecosystem
+spring-boot = "3.3.4"
+spring-dependency-management = "1.1.6"
+
+# Testing Frameworks
+spock = "2.4-M1"
+groovy = "4.0.22"
+junit = "5.10.3"
+testcontainers = "1.20.1"
+
+# Code Quality & Analysis
+spotbugs = "4.8.6"
+checkstyle = "10.17.0"
+jacoco = "0.8.12"
+
+# Build & Development Tools
+shadow = "8.3.0"
+openapi-generator = "7.9.0"
+
+# Utility Libraries
+commons-lang3 = "3.14.0"
+commons-io = "2.16.1"
+guava = "33.2.1-jre"
+
+[libraries]
+# Core Java
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
+
+# Logging
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+# Spring Boot
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "spring-boot" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "spring-boot" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation", version.ref = "spring-boot" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator", version.ref = "spring-boot" }
+
+# Testing
+spock-core = { module = "org.spockframework:spock-core", version.ref = "spock" }
+spock-spring = { module = "org.spockframework:spock-spring", version.ref = "spock" }
+groovy-core = { module = "org.apache.groovy:groovy", version.ref = "groovy" }
+groovy-json = { module = "org.apache.groovy:groovy-json", version.ref = "groovy" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+testcontainers-core = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+
+# Code Quality
+spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugs" }
+
+# Utilities
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+groovy = { id = "groovy", version = "3.0.21" }
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
+spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugs" }
+checkstyle = { id = "checkstyle", version.ref = "checkstyle" }
+jacoco = { id = "jacoco", version.ref = "jacoco" }

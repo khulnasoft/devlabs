@@ -1,0 +1,240 @@
+{
+  "plugin": {
+    "name": "Coverage AI",
+    "version": "0.0.2",
+    "description": "AI-powered test coverage analysis and suggestions for Gradle projects",
+    "author": "KhulnaSoft DevLabs",
+    "license": "MIT",
+    "website": "https://github.com/KhulnaSoft/devlabs",
+    "documentation": "https://github.com/Khulnasoft/devlabs/tree/main/intellij-projects/coverage-ai"
+  },
+  "ai": {
+    "model": {
+      "provider": "openai",
+      "modelName": "gpt-4",
+      "temperature": 0.3,
+      "maxTokens": 2000,
+      "timeoutSeconds": 30,
+      "retryAttempts": 3,
+      "retryDelayMs": 1000
+    },
+    "analysis": {
+      "coverageThreshold": 0.75,
+      "branchCoverageThreshold": 0.75,
+      "methodCoverageThreshold": 0.80,
+      "classCoverageThreshold": 0.85,
+      "enableSuggestions": true,
+      "maxSuggestionsPerFile": 5,
+      "minCoverageForSuggestions": 0.50,
+      "suggestionTypes": [
+        "missing-test-cases",
+        "edge-case-coverage",
+        "error-handling-tests",
+        "boundary-value-tests",
+        "null-safety-tests",
+        "exception-paths",
+        "integration-points"
+      ],
+      "analysisDepth": "method",
+      "includeCyclomaticComplexity": true,
+      "includeCognitiveComplexity": true
+    },
+    "prompts": {
+      "coverageAnalysis": "Analyze the following Java code for test coverage gaps. Consider edge cases, error conditions, and boundary values. Suggest specific test cases that would improve coverage.",
+      "methodAnalysis": "Analyze this method for missing test scenarios. Consider: input validation, edge cases, error conditions, and interaction with other components.",
+      "classAnalysis": "Analyze this class for comprehensive test coverage. Consider: constructor variations, method interactions, state management, and integration points."
+    }
+  },
+  "reporting": {
+    "formats": [
+      "html",
+      "json",
+      "xml",
+      "markdown"
+    ],
+    "outputDir": "build/coverage-ai-reports",
+    "includeSourceCode": true,
+    "includeRecommendations": true,
+    "includeMetrics": true,
+    "includeTrendAnalysis": true,
+    "generateIndividualFileReports": true,
+    "html": {
+      "theme": "modern",
+      "includeCharts": true,
+      "includeCodeSnippets": true,
+      "syntaxHighlighting": true
+    },
+    "json": {
+      "prettyPrint": true,
+      "includeMetadata": true,
+      "includeRawCoverage": false
+    }
+  },
+  "integration": {
+    "jacoco": {
+      "enabled": true,
+      "reportPath": "build/jacoco/test.exec",
+      "xmlReportPath": "build/reports/jacoco/test/jacocoTestReport.xml",
+      "htmlReportPath": "build/reports/jacoco/test/html",
+      "sourceDirs": [
+        "src/main/java",
+        "src/main/kotlin",
+        "src/main/groovy"
+      ],
+      "classDirs": [
+        "build/classes/java/main",
+        "build/classes/kotlin/main",
+        "build/classes/groovy/main"
+      ],
+      "additionalSourceDirs": [],
+      "additionalClassDirs": []
+    },
+    "junit": {
+      "enabled": true,
+      "reportPath": "build/test-results",
+      "includeParameterizedTests": true,
+      "includeDynamicTests": true
+    },
+    "testng": {
+      "enabled": false,
+      "reportPath": "build/test-results/testng"
+    },
+    "spock": {
+      "enabled": true,
+      "reportPath": "build/test-results/spock",
+      "includeDataDrivenTests": true
+    },
+    "ide": {
+      "vscode": {
+        "enabled": true,
+        "extensionId": "khulnasoft.coverage-ai",
+        "showInlineDecorations": true,
+        "showStatusBar": true,
+        "autoOpenReport": false
+      },
+      "intellij": {
+        "enabled": true,
+        "pluginId": "com.khulnasoft.coverage-ai",
+        "showGutterIcons": true,
+        "showToolWindow": true,
+        "integrateWithCoverageView": true
+      }
+    },
+    "ci": {
+      "githubActions": {
+        "enabled": true,
+        "uploadReports": true,
+        "commentPr": true,
+        "failOnLowCoverage": false,
+        "coverageThreshold": 0.75
+      },
+      "gitlabCi": {
+        "enabled": false,
+        "uploadReports": true,
+        "commentMr": true
+      },
+      "jenkins": {
+        "enabled": false,
+        "publishReports": true
+      }
+    }
+  },
+  "tasks": {
+    "analyzeCoverage": {
+      "description": "Analyze test coverage and generate AI suggestions",
+      "group": "verification",
+      "dependsOn": [
+        "test",
+        "jacocoTestReport"
+      ],
+      "outputs": [
+        "build/coverage-ai-reports"
+      ]
+    },
+    "generateSuggestions": {
+      "description": "Generate AI-powered test suggestions based on coverage analysis",
+      "group": "verification",
+      "requiresOnline": true,
+      "dependsOn": [
+        "analyzeCoverage"
+      ]
+    },
+    "exportReport": {
+      "description": "Export coverage analysis report in specified format",
+      "group": "reporting",
+      "outputs": [
+        "build/distributions/coverage-ai-report.zip"
+      ]
+    },
+    "checkCoverage": {
+      "description": "Verify that coverage meets configured thresholds",
+      "group": "verification",
+      "dependsOn": [
+        "analyzeCoverage"
+      ]
+    },
+    "baselineCoverage": {
+      "description": "Establish baseline coverage for trend analysis",
+      "group": "verification",
+      "dependsOn": [
+        "analyzeCoverage"
+      ]
+    }
+  },
+  "exclusions": {
+    "packages": [
+      ".*\\.generated\\..*",
+      ".*\\.config\\..*",
+      ".*\\..*Config.*",
+      ".*\\..*Configuration.*"
+    ],
+    "classes": [
+      ".*Test.*",
+      ".*Application",
+      ".*Main",
+      ".*Bootstrap",
+      ".*Config",
+      ".*Configuration",
+      ".*DTO",
+      ".*Dto"
+    ],
+    "methods": [
+      "toString",
+      "equals",
+      "hashCode",
+      "getters",
+      "setters",
+      "finalize",
+      "clone"
+    ],
+    "annotations": [
+      "@Generated",
+      "@Configuration",
+      "@Controller",
+      "@RestController",
+      "@Service",
+      "@Repository",
+      "@Component"
+    ]
+  },
+  "gradle": {
+    "pluginId": "com.khulnasoft.plugin.coverage-ai",
+    "minimumGradleVersion": "7.0",
+    "compatibleGradleVersions": [
+      "7.0",
+      "8.0",
+      "8.1",
+      "8.2",
+      "8.3",
+      "8.4",
+      "8.5"
+    ]
+  },
+  "development": {
+    "debugMode": false,
+    "verboseLogging": false,
+    "cacheEnabled": true,
+    "cacheDir": ".coverage-ai/cache",
+    "offlineMode": false
+  }
+}

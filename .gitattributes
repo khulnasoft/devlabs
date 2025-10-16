@@ -1,0 +1,218 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Java source files
+*.java text eol=lf
+*.kt text eol=lf
+*.kts text eol=lf
+*.groovy text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+*.rst text eol=lf
+
+# Configuration files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.properties text eol=lf
+
+# Scripts
+*.sh text eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# Gradle build files
+*.gradle text eol=lf
+*.gradle.kts text eol=lf
+
+# Docker files
+Dockerfile* text eol=lf
+.dockerignore text eol=lf
+
+# Web files
+*.html text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+
+# Template files
+*.template text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.ico binary
+*.svg binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.bz2 binary
+*.xz binary
+*.7z binary
+*.jar binary
+*.war binary
+*.ear binary
+*.class binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# Package manager files
+package.json text eol=lf
+package-lock.json text eol=lf
+yarn.lock text eol=lf
+pnpm-lock.yaml text eol=lf
+requirements.txt text eol=lf
+Pipfile text eol=lf
+Pipfile.lock text eol=lf
+
+# IDE files (treat as text for merging)
+*.iml text eol=lf
+*.ipr text eol=lf
+*.iws text eol=lf
+
+# VS Code settings
+.vscode/** text eol=lf
+
+# Documentation build output (binary-like)
+**/target/site/** binary
+**/build/docs/** binary
+
+# Test reports and coverage (text for merging)
+**/target/surefire-reports/** text eol=lf
+**/target/failsafe-reports/** text eol=lf
+**/target/site/jacoco/** text eol=lf
+coverage/** text eol=lf
+
+# Log files (text for analysis)
+*.log text eol=lf
+
+# Generated files (text for merging)
+generated/** text eol=lf
+generated-sources/** text eol=lf
+
+# API documentation (text for merging)
+api-docs/** text eol=lf
+
+# Database files (binary)
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Certificate files (binary)
+*.pem binary
+*.key binary
+*.crt binary
+*.cer binary
+*.p12 binary
+*.pfx binary
+*.jks binary
+
+# Archive files (binary)
+*.zip binary
+*.tar binary
+*.tar.gz binary
+*.tgz binary
+*.rar binary
+
+# Office documents (binary)
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+
+# Media files (binary)
+*.mp3 binary
+*.mp4 binary
+*.avi binary
+*.mov binary
+*.mkv binary
+*.wav binary
+*.flac binary
+*.ogg binary
+
+# Font files (binary)
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+
+# Language-specific settings
+*.cs text eol=lf
+*.fs text eol=lf
+*.ml text eol=lf
+*.hs text eol=lf
+*.scala text eol=lf
+*.clj text eol=lf
+*.cljs text eol=lf
+*.php text eol=lf
+*.rb text eol=lf
+*.go text eol=lf
+*.rs text eol=lf
+*.swift text eol=lf
+*.dart text eol=lf
+*.lua text eol=lf
+*.pl text eol=lf
+*.pm text eol=lf
+*.tcl text eol=lf
+*.vb text eol=crlf
+*.fsx text eol=lf
+*.ml text eol=lf
+
+# Windows-specific files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=lf
+
+# Makefile (tabs are significant)
+Makefile text eol=lf
+**/Makefile text eol=lf
+
+# CMake files
+CMakeLists.txt text eol=lf
+*.cmake text eol=lf
+
+# Gradle wrapper (text for consistency)
+gradle/** text eol=lf
+**/gradle/wrapper/** text eol=lf
+
+# Editor configuration
+.editorconfig text eol=lf
+.prettierrc text eol=lf
+.eslintrc text eol=lf
+.eslintrc.js text eol=lf
+.eslintrc.json text eol=lf
+.eslintrc.yml text eol=lf
+.eslintrc.yaml text eol=lf
+
+# CI/CD files
+.github/** text eol=lf
+.gitlab-ci.yml text eol=lf
+Jenkinsfile text eol=lf
+
+# License files
+LICENSE text eol=lf
+LICENSE.txt text eol=lf
+LICENSE.md text eol=lf
+
+# Changelog and version files
+CHANGELOG text eol=lf
+CHANGELOG.md text eol=lf
+CHANGELOG.txt text eol=lf
+HISTORY text eol=lf
+HISTORY.md text eol=lf
+VERSION text eol=lf
+version.properties text eol=lf

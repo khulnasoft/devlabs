@@ -1,0 +1,104 @@
+# Multi-stage Docker setup for Selenium testing
+FROM openjdk:21-jdk-slim as base
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    unzip \
+    xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Chrome for Selenium
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up Chrome to run in headless mode
+ENV CHROME_BIN=/usr/bin/google-chrome-stable
+
+# Create app user
+RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy Gradle wrapper and build files
+COPY gradlew gradlew.bat build.gradle settings.gradle ./
+COPY gradle/ gradle/
+
+# Copy source code
+COPY src/ src/
+
+# Fix permissions
+RUN chmod +x gradlew && chown -R appuser:appuser /app
+
+# Switch to app user
+USER appuser
+
+# Build the application
+RUN ./gradlew clean build -x test
+
+# Runtime stage for Selenium tests
+FROM base as selenium-runner
+
+# Copy test dependencies and built application
+COPY --from=base /app/build/ /app/build/
+
+# Install Docker Compose for container orchestration (optional)
+USER root
+RUN apt-get update && apt-get install -y docker-compose-plugin \
+    && rm -rf /var/lib/apt/lists/*
+USER appuser
+
+# Set environment variables for headless operation
+ENV DISPLAY=:99
+ENV HEADLESS=true
+ENV SELENIUM_HUB_URL=http://selenium-hub:4444/wd/hub
+
+# Default command to run tests
+CMD ["./gradlew", "test", "--info"]
+
+# Development stage with volume mounts for live coding
+FROM selenium-runner as development
+
+# Mount source code for live development
+VOLUME ["/app/src"]
+
+# Override command for development
+CMD ["./gradlew", "test", "--continuous"]
+
+# Production test execution stage
+FROM selenium-runner as production
+
+# Copy only necessary files for production
+COPY --from=base /app/build/libs/ /app/libs/
+COPY --from=base /app/src/test/ /app/test/
+
+# Run specific test suites
+CMD ["./gradlew", "test", "--tests", "*Selenium*"]
+
+# CI/CD stage for automated testing
+FROM selenium-runner as ci
+
+# Install additional tools for CI
+USER root
+RUN apt-get update && apt-get install -y \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+USER appuser
+
+# Generate test reports and coverage
+CMD ["./gradlew", "test", "jacocoTestReport", "--continue"]
+
+# Parallel test execution stage
+FROM selenium-runner as parallel
+
+# Configure for parallel test execution
+ENV GRADLE_OPTS="-Dorg.gradle.parallel=true -Dorg.gradle.daemon=false"
+ENV TEST_THREADS=4
+
+# Run tests in parallel
+CMD ["./gradlew", "test", "--parallel"]

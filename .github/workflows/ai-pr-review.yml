@@ -1,0 +1,64 @@
+name: AI-Powered PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  ai-review:
+    name: AI PR Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@ai-review'))
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: AI PR Review
+        id: pr-review
+        uses: khulnasoft/pr-insight@main
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          OPENAI_ORG: ${{ secrets.OPENAI_ORG }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          mode: 'review'
+          review-type: 'comprehensive'
+          include-coverage: true
+          include-security: true
+          include-performance: true
+
+      - name: Comment PR with AI Review
+        if: steps.pr-review.outputs.review-comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${{ steps.pr-review.outputs.review-comment }}`
+            })
+
+  ai-comment:
+    name: AI Comment Response
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@ai-review')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Respond to AI Review Comment
+        uses: khulnasoft/pr-insight@main
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          OPENAI_ORG: ${{ secrets.OPENAI_ORG }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          mode: 'comment'
+          comment-context: ${{ github.event.comment.body }}

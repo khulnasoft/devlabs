@@ -1,0 +1,216 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true
+
+jobs:
+  # Build and test all projects
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java-version: [21]
+        project: [
+          'ai-spock-groovy-combo',
+          'java-spring-refactor',
+          'functional-test-rest-service',
+          'smart-register',
+          'pr-insight',
+          'selenium-tests',
+          'coverage-ai'
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+        working-directory: intellij-projects/${{ matrix.project }}
+
+      - name: Build project
+        run: ./gradlew clean build --stacktrace --info
+        working-directory: intellij-projects/${{ matrix.project }}
+
+      - name: Run tests
+        run: ./gradlew test --stacktrace --info
+        working-directory: intellij-projects/${{ matrix.project }}
+
+      - name: Run integration tests
+        run: ./gradlew integrationTest --stacktrace --info
+        working-directory: intellij-projects/${{ matrix.project }}
+        continue-on-error: true
+
+      - name: Generate test report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: Test Results (${{ matrix.project }})
+          path: 'intellij-projects/${{ matrix.project }}/build/test-results/*/TEST-*.xml'
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.project }}
+          path: |
+            intellij-projects/${{ matrix.project }}/build/reports/
+            intellij-projects/${{ matrix.project }}/build/test-results/
+
+  # Static analysis
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: gradle
+
+      - name: Run SpotBugs
+        run: ./gradlew spotbugsMain spotbugsTest --stacktrace --info
+        continue-on-error: true
+
+      - name: Run Checkstyle
+        run: ./gradlew checkstyleMain checkstyleTest --stacktrace --info
+        continue-on-error: true
+
+      - name: Upload static analysis reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-analysis-reports
+          path: |
+            **/build/reports/spotbugs/
+            **/build/reports/checkstyle/
+
+  # Code coverage
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: gradle
+
+      - name: Generate coverage report
+        run: ./gradlew jacocoTestReport --stacktrace --info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./build/reports/jacoco/test/jacocoTestReport.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            **/build/reports/jacoco/
+            **/build/test-results/
+
+  # Build tool projects
+  build-tools:
+    name: Build Tool Examples
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: gradle
+
+      - name: Build Gradle examples
+        run: |
+          cd build-tool-projects/gradle/
+          # Add build commands if needed
+
+      - name: Validate Maven structure
+        run: |
+          cd build-tool-projects/maven/
+          # Add validation commands if needed
+
+  # Docker builds
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker images
+        run: |
+          cd docker/
+          docker build -f Dockerfile.react-weather-app -t khulnasoft/react-weather-app:${{ github.sha }} .
+          docker build -f Dockerfile.react-weather-app -t khulnasoft/react-weather-app:latest .
+
+      - name: Test Docker images
+        run: |
+          # Add basic smoke tests for Docker images
+          echo "Docker image built successfully"
+
+  # Deploy documentation
+  deploy-docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: [build-and-test, static-analysis, coverage]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html/
+          cname: devlabs.khulnasoft.com

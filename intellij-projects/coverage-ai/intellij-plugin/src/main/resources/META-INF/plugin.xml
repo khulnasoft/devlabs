@@ -1,0 +1,153 @@
+<idea-plugin>
+    <id>com.khulnasoft.coverage-ai</id>
+    <name>Coverage AI</name>
+    <version>0.0.2</version>
+    <vendor email="devlabs@khulnasoft.com" url="https://github.com/KhulnaSoft/devlabs">KhulnaSoft DevLabs</vendor>
+
+    <description><![CDATA[
+        <h2>Coverage AI</h2>
+        <p>AI-powered test coverage analysis and suggestions for Java projects in IntelliJ IDEA.</p>
+
+        <h3>Features</h3>
+        <ul>
+            <li>🤖 AI-powered coverage analysis using JaCoCo reports</li>
+            <li>💡 Intelligent test suggestions based on code analysis</li>
+            <li>📊 Visual coverage indicators in the editor</li>
+            <li>🔍 Detailed coverage reports with recommendations</li>
+            <li>⚡ Quick actions for generating missing tests</li>
+        </ul>
+
+        <h3>Requirements</h3>
+        <ul>
+            <li>IntelliJ IDEA 2022.3 or later</li>
+            <li>Java 17 or later</li>
+            <li>Gradle project with JaCoCo plugin</li>
+        </ul>
+
+        <p><a href="https://github.com/KhulnaSoft/devlabs">Learn more</a> | <a href="https://github.com/KhulnaSoft/devlabs/issues">Report issues</a></p>
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <h3>Version 0.0.2</h3>
+        <ul>
+            <li>Enhanced AI analysis with better prompt engineering</li>
+            <li>Improved coverage visualization in editor</li>
+            <li>Added support for multiple AI models</li>
+            <li>Bug fixes and performance improvements</li>
+        </ul>
+    ]]></change-notes>
+
+    <!-- IntelliJ Platform Version -->
+    <idea-version since-build="223.0" until-build="241.*"/>
+
+    <!-- Plugin Dependencies -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.lang</depends>
+
+    <!-- Optional Dependencies -->
+    <depends optional="true" config-file="gradle-integration.xml">com.intellij.gradle</depends>
+
+    <!-- Plugin Extensions -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Tool Window -->
+        <toolWindow id="Coverage AI" secondary="true" icon="/icons/coverage-ai.svg" anchor="right"
+                   factoryClass="com.khulnasoft.coverage.ai.toolwindow.CoverageAIToolWindowFactory"/>
+
+        <!-- Project Service -->
+        <projectService serviceImplementation="com.khulnasoft.coverage.ai.service.CoverageAIService"/>
+
+        <!-- File Editor Provider -->
+        <editorProvider implementation="com.khulnasoft.coverage.ai.editor.CoverageAIEditorProvider"/>
+
+        <!-- Gutter Icon -->
+        <codeInsight.lineMarkerProvider language="JAVA"
+                                       implementationClass="com.khulnasoft.coverage.ai.gutter.CoverageAIGutterIconProvider"/>
+
+        <!-- Intention Actions -->
+        <intentionAction>
+            <className>com.khulnasoft.coverage.ai.intentions.GenerateTestIntention</className>
+            <category>Coverage AI</category>
+            <descriptionDirectoryName>GenerateTest</descriptionDirectoryName>
+        </intentionAction>
+
+        <intentionAction>
+            <className>com.khulnasoft.coverage.ai.intentions.AnalyzeCoverageIntention</className>
+            <category>Coverage AI</category>
+            <descriptionDirectoryName>AnalyzeCoverage</descriptionDirectoryName>
+        </intentionAction>
+    </extensions>
+
+    <!-- Application Components -->
+    <application-components>
+        <component>
+            <implementation-class>com.khulnasoft.coverage.ai.settings.CoverageAISettings</implementation-class>
+        </component>
+    </application-components>
+
+    <!-- Project Components -->
+    <project-components>
+        <component>
+            <implementation-class>com.khulnasoft.coverage.ai.listeners.CoverageAIProjectManager</implementation-class>
+        </component>
+    </project-components>
+
+    <!-- Actions -->
+    <actions>
+        <!-- Main Menu Actions -->
+        <group id="CoverageAIMenu" text="Coverage AI" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+
+            <action id="CoverageAI.AnalyzeProject"
+                   class="com.khulnasoft.coverage.ai.actions.AnalyzeProjectAction"
+                   text="Analyze Project Coverage"
+                   description="Run AI-powered coverage analysis on the entire project">
+            </action>
+
+            <action id="CoverageAI.AnalyzeFile"
+                   class="com.khulnasoft.coverage.ai.actions.AnalyzeFileAction"
+                   text="Analyze Current File"
+                   description="Run AI-powered coverage analysis on the current file">
+            </action>
+
+            <separator/>
+
+            <action id="CoverageAI.ShowReport"
+                   class="com.khulnasoft.coverage.ai.actions.ShowReportAction"
+                   text="Show Coverage Report"
+                   description="Display the latest coverage analysis report">
+            </action>
+
+            <action id="CoverageAI.GenerateSuggestions"
+                   class="com.khulnasoft.coverage.ai.actions.GenerateSuggestionsAction"
+                   text="Generate AI Suggestions"
+                   description="Generate AI-powered test suggestions for uncovered code">
+            </action>
+        </group>
+
+        <!-- Context Menu Actions -->
+        <group id="CoverageAI.EditorPopup">
+            <action id="CoverageAI.AnalyzeSelection"
+                   class="com.khulnasoft.coverage.ai.actions.AnalyzeSelectionAction"
+                   text="Analyze with Coverage AI"
+                   description="Analyze selected code with AI for test coverage suggestions">
+            </action>
+        </group>
+
+        <!-- Toolbar Actions -->
+        <group id="CoverageAI.Toolbar">
+            <action id="CoverageAI.QuickAnalyze"
+                   class="com.khulnasoft.coverage.ai.actions.QuickAnalyzeAction"
+                   text="Quick Coverage Analysis"
+                   description="Run a quick coverage analysis"
+                   icon="/icons/quick-analyze.svg">
+            </action>
+        </group>
+    </actions>
+
+    <!-- Plugin Icon -->
+    <applicationListeners>
+        <listener class="com.khulnasoft.coverage.ai.listeners.CoverageAIStartupListener"
+                 topic="com.intellij.openapi.application.ApplicationListener"/>
+    </applicationListeners>
+</idea-plugin>

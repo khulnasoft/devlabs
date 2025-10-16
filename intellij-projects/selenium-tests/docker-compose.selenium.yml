@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # Application under test (React Weather App)
+  weather-app:
+    build:
+      context: .
+      dockerfile: docker/react-weather-app/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=test
+    networks:
+      - selenium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Selenium Hub for test orchestration
+  selenium-hub:
+    image: selenium/hub:4.15
+    ports:
+      - "4444:4444"
+    environment:
+      - GRID_MAX_SESSION=5
+      - GRID_TIMEOUT=300
+    networks:
+      - selenium-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Chrome Node for test execution
+  chrome-node:
+    image: selenium/node-chrome:4.15
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=3
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - selenium-network
+    shm_size: 2gb
+
+  # Firefox Node for cross-browser testing (optional)
+  firefox-node:
+    image: selenium/node-firefox:4.15
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=2
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - selenium-network
+    shm_size: 2gb
+    profiles:
+      - firefox
+      - all-browsers
+
+  # Test runner container
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.selenium-tests
+      target: ci
+    depends_on:
+      weather-app:
+        condition: service_healthy
+      selenium-hub:
+        condition: service_healthy
+      chrome-node:
+        condition: service_started
+    environment:
+      - SELENIUM_HUB_URL=http://selenium-hub:4444/wd/hub
+      - APP_URL=http://weather-app:3000
+      - TEST_BROWSER=chrome
+      - HEADLESS=true
+      - PARALLEL_EXECUTION=true
+      - TEST_THREADS=3
+    volumes:
+      - ./build/reports:/app/build/reports
+      - ./build/test-results:/app/build/test-results
+    networks:
+      - selenium-network
+    command: >
+      bash -c "
+        echo 'Waiting for application to be ready...' &&
+        sleep 10 &&
+        ./gradlew test --tests '*Selenium*' --info &&
+        echo 'Tests completed, copying reports...' &&
+        cp -r build/reports/* /app/build/reports/ || true
+      "
+
+  # Test analytics and reporting
+  test-analytics:
+    build:
+      context: .
+      dockerfile: Dockerfile.selenium-tests
+      target: ci
+    depends_on:
+      test-runner:
+        condition: service_completed_successfully
+    volumes:
+      - ./build/reports:/app/build/reports:ro
+      - ./build/test-results:/app/build/test-results:ro
+    networks:
+      - selenium-network
+    command: >
+      bash -c "
+        echo 'Generating test analytics report...' &&
+        # This would run a custom test analytics script
+        echo 'Test analytics completed'
+      "
+
+networks:
+  selenium-network:
+    driver: bridge
+
+# Named volumes for persistent data
+volumes:
+  reports-volume:
+    driver: local
+  test-results-volume:
+    driver: local
+
+# Profiles for different testing scenarios
+# Use with: docker-compose --profile firefox up
+# Use with: docker-compose --profile all-browsers up

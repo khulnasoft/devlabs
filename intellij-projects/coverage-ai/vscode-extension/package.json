@@ -1,0 +1,202 @@
+{
+  "name": "coverage-ai",
+  "displayName": "Coverage AI",
+  "description": "AI-powered test coverage analysis and suggestions for your Java projects",
+  "version": "0.0.2",
+  "publisher": "khulnasoft",
+  "author": {
+    "name": "KhulnaSoft DevLabs",
+    "url": "https://github.com/KhulnaSoft/devlabs"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KhulnaSoft/devlabs.git",
+    "directory": "intellij-projects/coverage-ai/vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/KhulnaSoft/devlabs/issues"
+  },
+  "homepage": "https://github.com/KhulnaSoft/devlabs/tree/main/intellij-projects/coverage-ai",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "keywords": [
+    "coverage",
+    "testing",
+    "ai",
+    "java",
+    "gradle",
+    "jacoco"
+  ],
+  "activationEvents": [
+    "onCommand:coverage-ai.analyzeCoverage",
+    "onCommand:coverage-ai.showReport",
+    "onCommand:coverage-ai.generateSuggestions",
+    "workspaceContains:**/build.gradle"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "coverage-ai.analyzeCoverage",
+        "title": "Analyze Test Coverage with AI",
+        "category": "Coverage AI"
+      },
+      {
+        "command": "coverage-ai.showReport",
+        "title": "Show Coverage AI Report",
+        "category": "Coverage AI"
+      },
+      {
+        "command": "coverage-ai.generateSuggestions",
+        "title": "Generate AI Test Suggestions",
+        "category": "Coverage AI"
+      },
+      {
+        "command": "coverage-ai.openSettings",
+        "title": "Open Coverage AI Settings",
+        "category": "Coverage AI"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .java",
+          "command": "coverage-ai.analyzeFile",
+          "group": "coverage-ai"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceExtname == .java",
+          "command": "coverage-ai.analyzeSelection",
+          "group": "coverage-ai"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Coverage AI",
+      "properties": {
+        "coverage-ai.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Coverage AI extension"
+        },
+        "coverage-ai.ai.model": {
+          "type": "string",
+          "default": "gpt-4",
+          "enum": [
+            "gpt-4",
+            "gpt-3.5-turbo",
+            "claude-3-sonnet",
+            "claude-3-haiku"
+          ],
+          "description": "AI model to use for analysis"
+        },
+        "coverage-ai.ai.temperature": {
+          "type": "number",
+          "default": 0.3,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Temperature for AI responses (0 = deterministic, 1 = creative)"
+        },
+        "coverage-ai.report.showInlineDecorations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show coverage information as inline decorations in Java files"
+        },
+        "coverage-ai.report.autoOpen": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically open coverage report after analysis"
+        },
+        "coverage-ai.report.format": {
+          "type": "string",
+          "default": "html",
+          "enum": [
+            "html",
+            "json",
+            "markdown"
+          ],
+          "description": "Default report format"
+        },
+        "coverage-ai.gradle.task": {
+          "type": "string",
+          "default": "analyzeCoverage",
+          "description": "Gradle task to run for coverage analysis"
+        },
+        "coverage-ai.integration.jacoco.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable JaCoCo integration"
+        },
+        "coverage-ai.integration.jacoco.reportPath": {
+          "type": "string",
+          "default": "build/jacoco/test.exec",
+          "description": "Path to JaCoCo execution data file"
+        }
+      }
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "coverage-ai.explorer",
+          "name": "Coverage AI",
+          "when": "coverage-ai.enabled"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "coverage-ai",
+          "title": "Coverage AI",
+          "icon": "$(graph)",
+          "when": "coverage-ai.enabled"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "id": "java",
+        "extensions": [
+          ".java"
+        ]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "java",
+        "scopeName": "source.java",
+        "path": "./syntaxes/java.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.3",
+    "@vscode/test-electron": "^2.2.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "marked": "^4.3.0"
+  }
+}

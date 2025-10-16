@@ -2,11 +2,13 @@ plugins {
     id 'java'
     id 'groovy'
     id 'idea'
+    id 'jacoco'
+    id 'com.github.spotbugs'
+    id 'checkstyle'
 }
 
 group = 'com.khulnasoft'
 version = '0.0.1-SNAPSHOT'
-
 
 java {
     sourceCompatibility = '21'
@@ -18,16 +20,211 @@ repositories {
 }
 
 dependencies {
+    // Core dependencies
+    implementation 'org.apache.groovy:groovy:4.0.22'
 
-    testImplementation 'org.apache.groovy:groovy:4.0.22'
-
+    // Spock testing framework
     testImplementation 'org.spockframework:spock-core:2.4-M1-groovy-4.0'
+    testImplementation 'org.spockframework:spock-spring:2.4-M1-groovy-4.0'
+
+    // Test utilities
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+    testImplementation 'org.hamcrest:hamcrest-core:2.2'
+
+    // Mocking and stubbing
+    testImplementation 'org.mockito:mockito-core:5.7.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.7.0'
+
+    // JSON processing for analytics
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    testImplementation 'com.fasterxml.jackson.core:jackson-core:2.17.2'
+
+    // HTTP client for external services
+    testImplementation 'org.apache.httpcomponents:httpclient:4.5.14'
+
+    // Logging
+    testImplementation 'ch.qos.logback:logback-classic:1.4.14'
+    testImplementation 'org.slf4j:slf4j-api:2.0.9'
 }
 
+// Test configuration
 tasks.named('test') {
     useJUnitPlatform()
+
+    // Enable parallel execution
+    maxParallelForks = Runtime.runtime.availableProcessors()
+
+    // Set test JVM arguments
+    jvmArgs(
+        '-XX:+UseParallelGC',
+        '-Xmx2g',
+        '-Djava.awt.headless=true'
+    )
+
+    // Test reporting
+    reports {
+        junitXml.enabled = true
+        html.enabled = true
+    }
+
+    // System properties for test configuration
+    systemProperty 'spock.configuration', 'SpockConfig.groovy'
+    systemProperty 'test.environment', System.getProperty('test.environment', 'development')
 }
 
-tasks.withType(Test) {
+// Integration test configuration
+tasks.register('integrationTest', Test) {
     useJUnitPlatform()
+
+    // Include integration tests
+    include '**/*Integration*Spec.class'
+    include '**/*Integration*Test.class'
+
+    // Separate test results directory
+    reports.junitXml.destination = file('build/integration-test-results')
+    reports.html.destination = file('build/reports/integration-tests')
+
+    // Longer timeout for integration tests
+    testLogging {
+        lifecycle {
+            events "started", "skipped", "failed", "standard_error", "standard_out"
+            exceptionFormat "short"
+        }
+    }
+}
+
+// Code quality tasks
+spotbugs {
+    toolVersion = '4.8.6'
+    effort = 'max'
+    reportLevel = 'low'
+    excludeFilter = file('config/spotbugs-exclude.xml')
+}
+
+checkstyle {
+    toolVersion = '10.17.0'
+    configFile = file('config/checkstyle.xml')
+}
+
+jacoco {
+    toolVersion = '0.8.12'
+}
+
+// Custom tasks for AI-enhanced testing
+tasks.register('generateTestSpec') {
+    group = 'ai-testing'
+    description = 'Generate test specifications from natural language requirements'
+
+    doLast {
+        def pipeline = new com.khulnasoft.spock.ai.NaturalLanguageTestPipeline()
+        def requirements = new File('requirements.txt').text
+        def sourceCode = new File('src/main/java').listFiles()?.find { it.name.endsWith('.java') }?.text
+
+        def testSpec = pipeline.generateTestSpec(requirements, sourceCode)
+        new File('build/generated-tests/GeneratedTestSpec.groovy').text = testSpec
+
+        println "Generated test specification: build/generated-tests/GeneratedTestSpec.groovy"
+    }
+}
+
+tasks.register('analyzeTestFailures') {
+    group = 'ai-testing'
+    description = 'Analyze test failures with AI assistance'
+
+    doLast {
+        def analyzer = new com.khulnasoft.spock.ai.TestFailureAnalyzer()
+
+        // This would typically read from test results
+        def failureInfo = new com.khulnasoft.spock.ai.FailureInfo(
+            testName: 'exampleTest',
+            message: 'Assertion failed',
+            stackTrace: 'java.lang.AssertionError: expected 1 but was 0',
+            testCode: 'def "example test"() { expect: 1 == 0 }'
+        )
+
+        def analysis = analyzer.analyzeFailure(
+            failureInfo.testName,
+            failureInfo.message,
+            failureInfo.stackTrace,
+            failureInfo.testCode
+        )
+
+        println "Failure Analysis Report"
+        println "=" * 50
+        println analysis.summary
+
+        analysis.suggestions.eachWithIndex { suggestion, index ->
+            println "${index + 1}. ${suggestion.description}"
+            suggestion.actions.each { action ->
+                println "   - $action"
+            }
+        }
+    }
+}
+
+tasks.register('generateTestAnalytics') {
+    group = 'ai-testing'
+    description = 'Generate comprehensive test analytics dashboard'
+
+    dependsOn 'test'
+
+    doLast {
+        def dashboard = new com.khulnasoft.spock.ai.TestAnalyticsDashboard()
+        def analyticsData = dashboard.generateAnalytics('build/test-results/test')
+
+        // Export in multiple formats
+        dashboard.exportAnalytics(analyticsData, 'build/reports', ['json', 'html'])
+
+        println "Test analytics generated:"
+        println "  JSON: build/reports/test-analytics-*.json"
+        println "  HTML: build/reports/test-analytics-*.html"
+    }
+}
+
+tasks.register('classifyTests') {
+    group = 'ai-testing'
+    description = 'Classify tests and generate classification report'
+
+    doLast {
+        def classifier = new com.khulnasoft.spock.ai.TestClassifier()
+        def testMethods = [
+            [name: 'unit test', content: 'Simple unit test for business logic'],
+            [name: 'integration test', content: 'Test with database and external services'],
+            [name: 'functional test', content: 'End-to-end test with UI interaction']
+        ]
+
+        def classifications = classifier.classifyTests(testMethods)
+
+        println "Test Classification Report"
+        println "=" * 40
+        classifications.each { classification ->
+            println "${classification.testType} (${classification.category}): ${classification.confidence * 100}%"
+            println "  Tags: ${classification.tags.join(', ')}"
+            println "  Dependencies: ${classification.dependencies.join(', ')}"
+            println "  Complexity: ${classification.complexity}"
+            println()
+        }
+    }
+}
+
+// Build configuration
+tasks.named('build') {
+    dependsOn 'check'
+}
+
+tasks.named('check') {
+    dependsOn 'test', 'integrationTest', 'checkstyle', 'spotbugs'
+}
+
+// Clean task
+tasks.named('clean') {
+    delete 'build', 'out'
+}
+
+// IDE integration
+idea {
+    module {
+        testSourceDirs += file('src/integration-test/groovy')
+        testSourceDirs += file('src/integration-test/java')
+    }
 }

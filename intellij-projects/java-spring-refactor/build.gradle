@@ -1,12 +1,13 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.1.3'
-    id 'io.spring.dependency-management' version '1.1.3'
+    id 'org.springframework.boot' version '3.3.4'
+    id 'io.spring.dependency-management' version '1.1.6'
     id 'groovy'
     id 'com.coditory.integration-test' version '1.4.5'
+    id 'org.openapi.generator' version '7.9.0'
 }
 
-group = 'com.davidparry'
+group = 'com.khulnasoft'
 version = '0.0.1-SNAPSHOT'
 
 java {
@@ -21,24 +22,136 @@ configurations {
 
 repositories {
     mavenCentral()
+    // Include local commons libraries
+    flatDir {
+        dirs '../commons-utils/build/libs', '../commons-dto/build/libs', '../commons-rest/build/libs'
+    }
 }
 
 dependencies {
+    // Shared libraries
+    implementation name: 'commons-utils-0.0.1-SNAPSHOT'
+    implementation name: 'commons-dto-0.0.1-SNAPSHOT'
+    implementation name: 'commons-rest-0.0.1-SNAPSHOT'
+
+    // Spring Boot starters
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // OpenAPI/Swagger
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+
+    // Database
     runtimeOnly 'com.h2database:h2'
+
+    // Development tools
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Annotation processors
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // Test dependencies
     testImplementation 'org.spockframework:spock-core:2.4-M1-groovy-4.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.spockframework:spock-spring:2.4-M1-groovy-4.0'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:spock'
 }
 
+// OpenAPI Code Generation
+openApiGenerate {
+    generatorName = "spring"
+    inputSpec = "${projectDir}/src/main/resources/api/openapi.yaml".toString()
+    outputDir = "${buildDir}/generated".toString()
+    apiPackage = "com.khulnasoft.refactor.api"
+    modelPackage = "com.khulnasoft.refactor.dto"
+    configOptions = [
+        dateLibrary: "java8",
+        useSpringBoot3: "true",
+        interfaceOnly: "true",
+        useTags: "true"
+    ]
+}
+
+compileJava {
+    dependsOn tasks.openApiGenerate
+}
+
+sourceSets.main.java.srcDirs "${buildDir}/generated/src/main/java"
+
+// Test configuration
 tasks.named('test') {
     useJUnitPlatform()
+
+    // Enable parallel execution
+    maxParallelForks = Runtime.runtime.availableProcessors()
+
+    // Test system properties
+    systemProperty 'spring.profiles.active', 'test'
+    systemProperty 'spring.jpa.hibernate.ddl-auto', 'create-drop'
 }
 
 tasks.withType(Test) {
     useJUnitPlatform()
+}
+
+// Integration test configuration
+tasks.register('integrationTest', Test) {
+    useJUnitPlatform()
+    include '**/*Integration*Spec.class'
+    include '**/*Integration*Test.class'
+
+    systemProperty 'spring.profiles.active', 'integration'
+    systemProperty 'testcontainers.reuse.enable', 'true'
+
+    testLogging {
+        lifecycle {
+            events "started", "skipped", "failed", "standard_error", "standard_out"
+            exceptionFormat "short"
+        }
+    }
+}
+
+// Code quality
+tasks.withType(JavaCompile) {
+    options.compilerArgs.addAll([
+        '-Xlint:all',
+        '-Xlint:-serial',
+        '-parameters'
+    ])
+}
+
+// Build configuration
+tasks.named('build') {
+    dependsOn 'integrationTest'
+}
+
+tasks.named('check') {
+    dependsOn 'test', 'integrationTest'
+}
+
+// BootJar configuration for layered deployment
+bootJar {
+    layered {
+        enabled = true
+    }
+}
+
+// Development profile
+tasks.register('dev') {
+    group = 'application'
+    description = 'Run the application in development mode'
+
+    dependsOn 'compileJava', 'compileGroovy'
+    doLast {
+        javaexec {
+            mainClass = 'com.khulnasoft.refactor.Application'
+            classpath = sourceSets.main.runtimeClasspath
+            systemProperties System.getProperties()
+            environment 'SPRING_PROFILES_ACTIVE', 'development'
+        }
+    }
 }
