@@ -1,0 +1,164 @@
+// Enhanced test configuration with comprehensive settings
+tasks.withType(Test) {
+    // Enhanced logging configuration
+    testLogging {
+        lifecycle {
+            events 'STARTED', 'SKIPPED', 'FAILED', 'STANDARD_ERROR', 'STANDARD_OUT'
+            exceptionFormat = 'FULL'
+            showStackTraces = true
+            showCauses = true
+            showExceptions = true
+            showStandardStreams = project.hasProperty('showStandardStreams') ?: false
+        }
+        events 'FAILED', 'SKIPPED'
+    }
+
+    // JVM arguments for better test performance and compatibility
+    jvmArgs([
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.time=ALL-UNNAMED',
+        '-Xmx2g',
+        '-XX:+UseParallelGC',
+        '-XX:MaxMetaspaceSize=512m'
+    ])
+
+    // Test execution settings
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+    setForkEvery(100) // Fork JVM every 100 tests to prevent memory leaks
+
+    // Test retry for flaky tests
+    retry {
+        maxRetries = 2
+        maxFailures = 5
+    }
+
+    // Timeout settings
+    timeout = Duration.ofMinutes(10)
+
+    // System properties for tests
+    systemProperties = [
+        'file.encoding': 'UTF-8',
+        'user.language': 'en',
+        'user.country': 'US',
+        'java.awt.headless': 'true',
+        'spring.test.context.cache.maxSize': '4',
+        'spring.main.banner-mode': 'off'
+    ]
+
+    // Environment variables
+    environment = [
+        'LANG': 'C.UTF-8',
+        'LC_ALL': 'C.UTF-8'
+    ]
+
+    // Test result reporting
+    reports {
+        html {
+            enabled = true
+            destination = layout.buildDirectory.dir("reports/tests/html").get()
+        }
+        junitXml {
+            enabled = true
+            destination = layout.buildDirectory.dir("test-results").get()
+        }
+    }
+
+    // Test filtering (useful for CI/CD)
+    if (project.hasProperty('testFilter')) {
+        filter {
+            includeTestsMatching project.property('testFilter')
+        }
+    }
+
+    // Enhanced test execution listeners
+    addTestOutputListener { testDescriptor, testOutput ->
+        if (testOutput.output) {
+            logger.lifecycle("[${testDescriptor.className}.${testDescriptor.name}] ${testOutput.output.trim()}")
+        }
+    }
+
+    // Performance monitoring
+    doFirst {
+        def testCount = test.testCollection.size()
+        println "Running ${testCount} tests in ${name} with ${maxParallelForks} parallel forks"
+        if (testCount > 500) {
+            logger.warn("Large test suite detected (${testCount} tests). Consider splitting into smaller modules.")
+        }
+    }
+
+    // Memory cleanup after tests
+    doLast {
+        System.gc()
+    }
+}
+
+// Integration test configuration
+tasks.register('integrationTest', Test) {
+    group = 'verification'
+    description = 'Runs integration tests'
+
+    useJUnitPlatform()
+
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+
+    shouldRunAfter 'test'
+
+    // Longer timeout for integration tests
+    timeout = Duration.ofMinutes(30)
+
+    // Different JVM args for integration tests
+    jvmArgs([
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+        '-Xmx4g',
+        '-XX:+UseG1GC'
+    ])
+}
+
+// Performance test configuration
+tasks.register('performanceTest', Test) {
+    group = 'verification'
+    description = 'Runs performance tests'
+
+    useJUnitPlatform()
+
+    testClassesDirs = sourceSets.performanceTest.output.classesDirs
+    classpath = sourceSets.performanceTest.runtimeClasspath
+
+    shouldRunAfter 'integrationTest'
+
+    // Performance test specific settings
+    maxParallelForks = 1 // Run sequentially for accurate measurements
+    timeout = Duration.ofMinutes(60)
+
+    jvmArgs([
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '-Xmx8g',
+        '-XX:+UseG1GC',
+        '-XX:+UnlockExperimentalVMOptions',
+        '-XX:+UseJVMCICompiler'
+    ])
+
+    systemProperties = [
+        'jmh.ignoreLock': 'true',
+        'jmh.forks': '1'
+    ]
+}
+
+// Test validation task
+tasks.register('validateTestConfiguration') {
+    group = 'verification'
+    description = 'Validates test configuration'
+
+    doLast {
+        def testTasks = tasks.withType(Test)
+        testTasks.each { testTask ->
+            assert testTask.maxParallelForks >= 1 : "Test ${testTask.name} must have at least 1 parallel fork"
+            assert testTask.timeout.toMinutes() > 0 : "Test ${testTask.name} must have a timeout"
+        }
+
+        println "Test configuration validation passed for ${testTasks.size()} test tasks"
+    }
+}

@@ -2,98 +2,199 @@ plugins {
     id 'java'
     id 'groovy'
     id 'idea'
-    id 'jacoco'
-    id 'com.github.spotbugs'
-    id 'checkstyle'
+    id 'jacoco' version '0.8.12'
+    id 'com.github.spotbugs' version '5.0.12'
+    id 'checkstyle' version '8.52'
+    id 'maven-publish' version '4.1.0'
 }
 
 group = 'com.khulnasoft'
 version = '0.0.1-SNAPSHOT'
 
 java {
-    sourceCompatibility = '21'
-    targetCompatibility = '21'
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+// Groovy configuration
+groovy {
+    groovyOptions.javaAnnotationProcessing = true
 }
 
 repositories {
     mavenCentral()
 }
 
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            groupId = 'com.khulnasoft'
+            artifactId = 'ai-spock-groovy-combo'
+            version = '0.0.1-SNAPSHOT'
+        }
+    }
+}
+
 dependencies {
     // Core dependencies
     implementation 'org.apache.groovy:groovy:4.0.22'
+    implementation 'org.apache.groovy:groovy-json:4.0.22'
+    implementation 'org.apache.groovy:groovy-xml:4.0.22'
 
-    // Spock testing framework
+    // AI and NLP dependencies
+    implementation 'org.apache.opennlp:opennlp-tools:2.3.0'
+    implementation 'edu.stanford.nlp:stanford-corenlp:4.5.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.17.2'
+
+    // Testing dependencies
     testImplementation 'org.spockframework:spock-core:2.4-M1-groovy-4.0'
     testImplementation 'org.spockframework:spock-spring:2.4-M1-groovy-4.0'
-
-    // Test utilities
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.3'
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
-
-    // Mocking and stubbing
     testImplementation 'org.mockito:mockito-core:5.7.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.3'
 
-    // JSON processing for analytics
-    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
-    testImplementation 'com.fasterxml.jackson.core:jackson-core:2.17.2'
-
-    // HTTP client for external services
+    // Additional utilities
     testImplementation 'org.apache.httpcomponents:httpclient:4.5.14'
-
-    // Logging
     testImplementation 'ch.qos.logback:logback-classic:1.4.14'
     testImplementation 'org.slf4j:slf4j-api:2.0.9'
+
+    // AST and reflection utilities
+    implementation 'org.codehaus.groovy:groovy-astbuilder:4.0.22'
+    implementation 'org.reflections:reflections:0.10.2'
 }
 
-// Test configuration
+// Source sets configuration
+sourceSets {
+    main {
+        java { srcDirs = [] }    // Exclude Java files
+        groovy { srcDirs = ['src/main/java', 'src/main/groovy'] }
+    }
+    test {
+        java { srcDirs = [] }
+        groovy { srcDirs = ['src/test/java', 'src/test/groovy'] }
+    }
+}
+
 tasks.named('test') {
     useJUnitPlatform()
 
-    // Enable parallel execution
     maxParallelForks = Runtime.runtime.availableProcessors()
 
-    // Set test JVM arguments
     jvmArgs(
         '-XX:+UseParallelGC',
         '-Xmx2g',
         '-Djava.awt.headless=true'
     )
 
-    // Test reporting
-    reports {
-        junitXml.enabled = true
-        html.enabled = true
-    }
-
-    // System properties for test configuration
-    systemProperty 'spock.configuration', 'SpockConfig.groovy'
-    systemProperty 'test.environment', System.getProperty('test.environment', 'development')
+    reports.junitXml.destination = file('build/test-results')
+    reports.html.destination = file('build/reports/tests')
 }
 
-// Integration test configuration
 tasks.register('integrationTest', Test) {
     useJUnitPlatform()
 
-    // Include integration tests
     include '**/*Integration*Spec.class'
     include '**/*Integration*Test.class'
 
-    // Separate test results directory
     reports.junitXml.destination = file('build/integration-test-results')
     reports.html.destination = file('build/reports/integration-tests')
 
-    // Longer timeout for integration tests
     testLogging {
         lifecycle {
-            events "started", "skipped", "failed", "standard_error", "standard_out"
-            exceptionFormat "short"
+            events 'started', 'skipped', 'failed', 'standard_error', 'standard_out'
+            exceptionFormat 'short'
         }
     }
 }
 
-// Code quality tasks
+// AI-powered testing tasks
+tasks.register('generateTestSpec') {
+    group = 'ai-testing'
+    description = 'Generates Spock test specifications from natural language requirements'
+
+    doLast {
+        def pipeline = new com.khulnasoft.spock.ai.NaturalLanguageTestPipeline()
+        def requirements = file('requirements.txt').text
+        def testSpec = pipeline.generateTestSpec(requirements, null)
+
+        def outputFile = file('build/generated-tests/GeneratedTestSpec.groovy')
+        outputFile.parentFile.mkdirs()
+        outputFile.text = testSpec
+
+        println "Generated test specification: ${outputFile.absolutePath}"
+    }
+}
+
+tasks.register('classifyTests') {
+    group = 'ai-testing'
+    description = 'Classifies existing tests and generates classification report'
+
+    doLast {
+        def classifier = new com.khulnasoft.spock.ai.TestClassifier()
+
+        // Find all test files
+        def testFiles = fileTree('src/test') {
+            include '**/*Spec.groovy'
+            include '**/*Test.groovy'
+        }
+
+        def classifications = []
+        testFiles.each { testFile ->
+            def testContent = testFile.text
+            def testMethods = extractTestMethods(testContent)
+
+            testMethods.each { method ->
+                def classification = classifier.classifyTest(method.name, method.content, null)
+                classifications << [
+                    file: testFile.name,
+                    method: method.name,
+                    classification: classification
+                ]
+            }
+        }
+
+        generateClassificationReport(classifications)
+    }
+}
+
+tasks.register('analyzeTestFailures') {
+    group = 'ai-testing'
+    description = 'Analyzes test failures with AI assistance'
+
+    doLast {
+        def analyzer = new com.khulnasoft.spock.ai.TestFailureAnalyzer()
+
+        // This would typically read from test results
+        // For now, we'll create a demo analysis
+        println "AI Test Failure Analysis"
+        println "=" * 40
+        println "Feature will analyze test failures and provide intelligent suggestions"
+        println "Integration with test results parsing coming next..."
+    }
+}
+
+tasks.register('generateTestAnalytics') {
+    group = 'ai-testing'
+    description = 'Generates comprehensive test analytics and reports'
+
+    doLast {
+        def dashboard = new com.khulnasoft.spock.ai.TestAnalyticsDashboard()
+        def analyticsData = dashboard.generateAnalytics('build/test-results', [:])
+
+        // Export in multiple formats
+        def outputDir = file('build/reports/ai-analytics')
+        outputDir.mkdirs()
+
+        dashboard.exportAnalytics(analyticsData, outputDir.absolutePath, ['json', 'html'])
+
+        println "AI Test Analytics generated in: ${outputDir.absolutePath}"
+    }
+}
+
 spotbugs {
     toolVersion = '4.8.6'
     effort = 'max'
@@ -110,121 +211,72 @@ jacoco {
     toolVersion = '0.8.12'
 }
 
-// Custom tasks for AI-enhanced testing
-tasks.register('generateTestSpec') {
-    group = 'ai-testing'
-    description = 'Generate test specifications from natural language requirements'
-
-    doLast {
-        def pipeline = new com.khulnasoft.spock.ai.NaturalLanguageTestPipeline()
-        def requirements = new File('requirements.txt').text
-        def sourceCode = new File('src/main/java').listFiles()?.find { it.name.endsWith('.java') }?.text
-
-        def testSpec = pipeline.generateTestSpec(requirements, sourceCode)
-        new File('build/generated-tests/GeneratedTestSpec.groovy').text = testSpec
-
-        println "Generated test specification: build/generated-tests/GeneratedTestSpec.groovy"
-    }
-}
-
-tasks.register('analyzeTestFailures') {
-    group = 'ai-testing'
-    description = 'Analyze test failures with AI assistance'
-
-    doLast {
-        def analyzer = new com.khulnasoft.spock.ai.TestFailureAnalyzer()
-
-        // This would typically read from test results
-        def failureInfo = new com.khulnasoft.spock.ai.FailureInfo(
-            testName: 'exampleTest',
-            message: 'Assertion failed',
-            stackTrace: 'java.lang.AssertionError: expected 1 but was 0',
-            testCode: 'def "example test"() { expect: 1 == 0 }'
-        )
-
-        def analysis = analyzer.analyzeFailure(
-            failureInfo.testName,
-            failureInfo.message,
-            failureInfo.stackTrace,
-            failureInfo.testCode
-        )
-
-        println "Failure Analysis Report"
-        println "=" * 50
-        println analysis.summary
-
-        analysis.suggestions.eachWithIndex { suggestion, index ->
-            println "${index + 1}. ${suggestion.description}"
-            suggestion.actions.each { action ->
-                println "   - $action"
-            }
-        }
-    }
-}
-
-tasks.register('generateTestAnalytics') {
-    group = 'ai-testing'
-    description = 'Generate comprehensive test analytics dashboard'
-
-    dependsOn 'test'
-
-    doLast {
-        def dashboard = new com.khulnasoft.spock.ai.TestAnalyticsDashboard()
-        def analyticsData = dashboard.generateAnalytics('build/test-results/test')
-
-        // Export in multiple formats
-        dashboard.exportAnalytics(analyticsData, 'build/reports', ['json', 'html'])
-
-        println "Test analytics generated:"
-        println "  JSON: build/reports/test-analytics-*.json"
-        println "  HTML: build/reports/test-analytics-*.html"
-    }
-}
-
-tasks.register('classifyTests') {
-    group = 'ai-testing'
-    description = 'Classify tests and generate classification report'
-
-    doLast {
-        def classifier = new com.khulnasoft.spock.ai.TestClassifier()
-        def testMethods = [
-            [name: 'unit test', content: 'Simple unit test for business logic'],
-            [name: 'integration test', content: 'Test with database and external services'],
-            [name: 'functional test', content: 'End-to-end test with UI interaction']
-        ]
-
-        def classifications = classifier.classifyTests(testMethods)
-
-        println "Test Classification Report"
-        println "=" * 40
-        classifications.each { classification ->
-            println "${classification.testType} (${classification.category}): ${classification.confidence * 100}%"
-            println "  Tags: ${classification.tags.join(', ')}"
-            println "  Dependencies: ${classification.dependencies.join(', ')}"
-            println "  Complexity: ${classification.complexity}"
-            println()
-        }
-    }
-}
-
-// Build configuration
 tasks.named('build') {
-    dependsOn 'check'
+    dependsOn 'check', 'generateTestSpec'
 }
 
 tasks.named('check') {
     dependsOn 'test', 'integrationTest', 'checkstyle', 'spotbugs'
 }
 
-// Clean task
 tasks.named('clean') {
     delete 'build', 'out'
 }
 
-// IDE integration
 idea {
     module {
         testSourceDirs += file('src/integration-test/groovy')
         testSourceDirs += file('src/integration-test/java')
+        sourceDirs += file('src/main/groovy')
     }
+}
+
+// Helper methods for Gradle tasks
+def extractTestMethods(String testContent) {
+    def methods = []
+
+    // Simple regex to find test methods
+    def methodPattern = ~/"([^"]+)"/
+    def matches = testContent =~ methodPattern
+
+    matches.each { match ->
+        methods << [name: match[1], content: '']
+    }
+
+    methods
+}
+
+def generateClassificationReport(List classifications) {
+    def report = [:]
+
+    // Group by test type
+    report.byType = classifications.groupBy { it.classification.testType }
+
+    // Group by category
+    report.byCategory = classifications.groupBy { it.classification.category }
+
+    // Calculate statistics
+    report.statistics = [
+        totalTests: classifications.size(),
+        byType: report.byType.collectEntries { type, tests -> [type.toString(), tests.size()] },
+        byCategory: report.byCategory.collectEntries { category, tests -> [category.toString(), tests.size()] }
+    ]
+
+    // Print report
+    println "Test Classification Report"
+    println "=" * 40
+    println "Total Tests: ${report.statistics.totalTests}"
+    println "\nBy Type:"
+    report.statistics.byType.each { type, count ->
+        println "  ${type}: ${count}"
+    }
+    println "\nBy Category:"
+    report.statistics.byCategory.each { category, count ->
+        println "  ${category}: ${count}"
+    }
+
+    // Save detailed report
+    def reportFile = file('build/reports/test-classification.json')
+    reportFile.parentFile.mkdirs()
+    reportFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(report))
 }

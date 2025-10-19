@@ -1,0 +1,44 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler"
+         xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <table>
+        <f:entry title="Data Source" field="dataSource" help="/plugin/khulnasoft-devops/help-dataSource.html">
+            <f:select/>
+        </f:entry>
+        <f:entry title="Config item" field="keyName" help="/plugin/khulnasoft-devops/help-keyName.html">
+            <f:select onchange="check_datasource_key(this)" default="disabled"/>
+        </f:entry>
+        <f:entry title="Value" field="value" help="/plugin/khulnasoft-devops/help-value.html">
+            <f:textbox clazz="required" checkUrl="'descriptorByName/com.khulnasoft.khulnasoftjenkins.model.MetaDataConfigItem/checkValue?value='+encodeURIComponent(this.value)"/>
+        </f:entry>
+        <tr style="${instance.getCssDisplay()}" class="validation-error-area">
+            <!-- used to display the form validation error -->
+            <td colspan="2"/>
+            <td/>
+            <td/>
+        </tr>
+
+        <f:entry title="">
+            <div align="right">
+                <f:repeatableDeleteButton/>
+            </div>
+        </f:entry>
+    </table>
+    <st:once>
+        <script>
+function check_datasource_key(item) {
+    var val = item.value;
+    var tableRow = item.closest('tr').nextElementSibling;
+    var validateRow = tableRow?.nextElementSibling;
+
+    if (val === "disabled") {
+        tableRow.style.display = "none";
+        if (validateRow) validateRow.style.display = "none";
+    } else {
+        tableRow.style.display = "";
+        if (validateRow) validateRow.style.display = "";
+    }
+}
+        </script>
+    </st:once>
+</j:jelly>

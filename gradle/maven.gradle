@@ -1,0 +1,119 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+ext.isReleaseVersion = !version.endsWith('SNAPSHOT') && !version.contains('-SNAPSHOT.')
+
+publishing {
+  publications {
+    maven(MavenPublication) {
+      from components.java
+
+      // Set artifactId if not already set
+      if (!project.hasProperty('artifactId')) {
+        artifactId = project.name
+      }
+
+      pom {
+        name = project.name
+        description = project.description ?: 'A Java library providing enhanced functionality'
+        url = 'https://github.com/khulnasoft/devlabs'
+
+        inceptionYear = '2024'
+
+        scm {
+          connection = 'scm:git:git@github.com:khulnasoft/devlabs.git'
+          developerConnection = 'scm:git:git@github.com:khulnasoft/devlabs.git'
+          url = 'https://github.com/khulnasoft/devlabs'
+          tag = "v${project.version}"
+        }
+
+        licenses {
+          license {
+            name = 'Apache License, Version 2.0'
+            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+            distribution = 'repo'
+          }
+        }
+
+        developers {
+          developer {
+            id = 'khulnasoft'
+            name = 'KhulnaSoft Development Team'
+            email = 'dev@khulnasoft.com'
+            organization = 'KhulnaSoft'
+            organizationUrl = 'https://khulnasoft.com'
+            roles = ['developer']
+            timezone = 'UTC'
+          }
+        }
+
+        issueManagement {
+          system = 'GitHub Issues'
+          url = 'https://github.com/khulnasoft/devlabs/issues'
+        }
+
+        ciManagement {
+          system = 'GitHub Actions'
+          url = 'https://github.com/khulnasoft/devlabs/actions'
+        }
+
+        // Add properties for reproducibility
+        properties = [
+          'project.build.sourceEncoding': 'UTF-8',
+          'maven.compiler.source': JavaVersion.current().toString(),
+          'maven.compiler.target': JavaVersion.current().toString(),
+          'maven.compiler.release': JavaVersion.current().toString()
+        ]
+      }
+    }
+  }
+
+  // Configure repositories based on version
+  repositories {
+    maven {
+      name = 'OSSRH'
+      url = version.endsWith('SNAPSHOT') ?
+        'https://oss.sonatype.org/content/repositories/snapshots/' :
+        'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+
+      credentials {
+        username = System.getenv('OSSRH_USERNAME') ?: project.findProperty('ossrhUsername')
+        password = System.getenv('OSSRH_PASSWORD') ?: project.findProperty('ossrhPassword')
+      }
+    }
+  }
+}
+
+String signingKey = System.getenv('SIGNING_KEY')
+String signingPassword = System.getenv('SIGNING_PASSWORD')
+
+signing {
+  if (signingKey != null && signingPassword != null && !signingKey.isEmpty() && !signingPassword.isEmpty()) {
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
+  } else {
+    logger.warn('The signing key and password are not configured. This can be ignored if this is a pull request.')
+  }
+}
+
+tasks.withType(Sign) {
+  onlyIf { isReleaseVersion }
+}
+
+// Add validation for Maven publication
+tasks.register('validateMavenPublication') {
+  group = 'publishing'
+  description = 'Validates Maven publication metadata'
+
+  doLast {
+    def pom = publishing.publications.maven.pom
+    assert pom.name : 'Project name is required'
+    assert pom.description : 'Project description is required'
+    assert pom.url : 'Project URL is required'
+    assert pom.scm.url : 'SCM URL is required'
+    assert pom.licenses : 'At least one license is required'
+    assert pom.developers : 'At least one developer is required'
+
+    println "Maven publication validation passed for ${pom.name}"
+  }
+}

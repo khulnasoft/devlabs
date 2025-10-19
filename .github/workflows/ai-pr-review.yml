@@ -10,7 +10,11 @@ jobs:
   ai-review:
     name: AI PR Review
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@ai-review'))
+    if: |
+      (github.event_name == 'pull_request' || 
+      (github.event_name == 'issue_comment' && 
+      contains(github.event.comment.body, '@ai-review'))) &&
+      github.event.pull_request.state == 'open'
 
     steps:
       - name: Checkout repository
@@ -27,7 +31,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           mode: 'review'
-          review-type: 'comprehensive'
+          review-type: 'enhanced'
           include-coverage: true
           include-security: true
           include-performance: true

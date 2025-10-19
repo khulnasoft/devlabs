@@ -1,10 +1,15 @@
-package com.khulnasoft.spock.ai
+package com.khulnasoft.spock.ai;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Automatic Test Classification System
  * Classifies tests as Unit, Integration, or Functional based on code analysis
  */
-class TestClassifier {
+public class TestClassifier {
 
     enum TestType {
         UNIT, INTEGRATION, FUNCTIONAL, PERFORMANCE, SECURITY
@@ -17,7 +22,7 @@ class TestClassifier {
     /**
      * Classifies a test method based on its content and context.
      */
-    TestClassification classifyTest(String testName, String testContent, String sourceContext = null) {
+    TestClassification classifyTest(String testName, String testContent, String sourceContext) {
         def classification = new TestClassification()
 
         // Primary classification based on content analysis
@@ -36,14 +41,14 @@ class TestClassifier {
     /**
      * Batch classifies multiple test methods.
      */
-    List<TestClassification> classifyTests(List testMethods, String sourceContext = null) {
-        testMethods.collect { testMethod ->
+    List<TestClassification> classifyTests(List testMethods, String sourceContext) {
+        testMethods.stream().map(testMethod ->
             classifyTest(testMethod.name, testMethod.content, sourceContext)
-        }
+        ).collect(Collectors.toList())
     }
 
     private TestType determineTestType(String testContent, String sourceContext) {
-        def content = (testContent + (sourceContext ?: '')).toLowerCase()
+        String content = (testContent + (sourceContext ?: '')).toLowerCase()
 
         // Integration test indicators
         if (content.contains('database') || content.contains('repository') ||
@@ -81,7 +86,7 @@ class TestClassifier {
     }
 
     private TestCategory determineCategory(String testName, String testContent) {
-        def content = (testName + ' ' + testContent).toLowerCase()
+        String content = (testName + ' ' + testContent).toLowerCase()
 
         // Negative test indicators
         if (content.contains('not') || content.contains('fail') ||
@@ -116,10 +121,10 @@ class TestClassifier {
     }
 
     private double calculateConfidence(String testContent, String sourceContext) {
-        def indicators = 0
-        def totalChecks = 0
+        int indicators = 0
+        int totalChecks = 0
 
-        def content = (testContent + (sourceContext ?: '')).toLowerCase()
+        String content = (testContent + (sourceContext ?: '')).toLowerCase()
 
         // Check for clear indicators
         def typeIndicators = [
@@ -162,52 +167,52 @@ class TestClassifier {
     }
 
     private List<String> extractTags(String testContent) {
-        def tags = []
+        List<String> tags = new ArrayList<>();
 
-        def content = testContent.toLowerCase()
+        String content = testContent.toLowerCase()
 
-        if (content.contains('fast')) tags << 'fast'
-        if (content.contains('slow')) tags << 'slow'
-        if (content.contains('integration')) tags << 'integration'
-        if (content.contains('unit')) tags << 'unit'
-        if (content.contains('smoke')) tags << 'smoke'
-        if (content.contains('regression')) tags << 'regression'
-        if (content.contains('critical')) tags << 'critical'
-        if (content.contains('happy.path')) tags << 'happy-path'
+        if (content.contains('fast')) tags.add('fast')
+        if (content.contains('slow')) tags.add('slow')
+        if (content.contains('integration')) tags.add('integration')
+        if (content.contains('unit')) tags.add('unit')
+        if (content.contains('smoke')) tags.add('smoke')
+        if (content.contains('regression')) tags.add('regression')
+        if (content.contains('critical')) tags.add('critical')
+        if (content.contains('happy.path')) tags.add('happy-path')
 
         tags
     }
 
     private List<String> extractDependencies(String testContent) {
-        def dependencies = []
+        List<String> dependencies = new ArrayList<>();
 
-        def content = testContent.toLowerCase()
+        String content = testContent.toLowerCase()
 
-        if (content.contains('database') || content.contains('db')) dependencies << 'database'
-        if (content.contains('http') || content.contains('rest')) dependencies << 'http-client'
-        if (content.contains('selenium') || content.contains('webdriver')) dependencies << 'selenium'
-        if (content.contains('docker')) dependencies << 'docker'
-        if (content.contains('kafka')) dependencies << 'kafka'
-        if (content.contains('redis')) dependencies << 'redis'
+        if (content.contains('database') || content.contains('db')) dependencies.add('database')
+        if (content.contains('http') || content.contains('rest')) dependencies.add('http-client')
+        if (content.contains('selenium') || content.contains('webdriver')) dependencies.add('selenium')
+        if (content.contains('docker')) dependencies.add('docker')
+        if (content.contains('kafka')) dependencies.add('kafka')
+        if (content.contains('redis')) dependencies.add('redis')
 
         dependencies
     }
 
     private String calculateComplexity(String testContent) {
-        def complexity = 0
+        int complexity = 0
 
         // Count setup/teardown blocks
-        def setupCount = testContent.findAll('given:').size()
-        def teardownCount = testContent.findAll('cleanup:').size()
+        int setupCount = testContent.findAll('given:').size()
+        int teardownCount = testContent.findAll('cleanup:').size()
 
         // Count assertions
-        def assertionCount = testContent.findAll(/\bassert\b|\bthen:/).size()
+        int assertionCount = testContent.findAll(/\bassert\b|\bthen:/).size()
 
         // Count mocking/stubbing
-        def mockCount = testContent.findAll(/\bMock\b|\bStub\b/).size()
+        int mockCount = testContent.findAll(/\bMock\b|\bStub\b/).size()
 
         // Count external dependencies
-        def externalDeps = extractDependencies(testContent).size()
+        int externalDeps = extractDependencies(testContent).size()
 
         complexity = setupCount + teardownCount + (assertionCount * 0.5) + (mockCount * 0.3) + (externalDeps * 0.8)
 
@@ -288,15 +293,15 @@ class TestClassificationPlugin {
     }
 
     private List extractTestMethods(String testContent) {
-        def methods = []
+        List methods = new ArrayList<>();
 
         // Simple regex to find test methods
-        def methodPattern = /def\s+"([^"]+)"/
-        def matches = testContent =~ methodPattern
+        Pattern methodPattern = Pattern.compile("def\\s+\\"([^"]+)\\"");
+        Matcher matches = methodPattern.matcher(testContent);
 
-        matches.each { match ->
-            methods << [
-                name: match[1],
+        while (matches.find()) {
+            methods.add([
+                name: matches.group(1),
                 content: extractMethodContent(testContent, match[1])
             ]
         }
@@ -306,9 +311,9 @@ class TestClassificationPlugin {
 
     private String extractMethodContent(String testContent, String methodName) {
         // Simple extraction - in a real implementation, use proper AST parsing
-        def startIndex = testContent.indexOf('def "' + methodName + '"')
-        def endIndex = testContent.indexOf('def "', startIndex + 1)
-        if (endIndex == -1) endIndex = testContent.length()
+        int startIndex = testContent.indexOf("def \"" + methodName + "\"");
+        int endIndex = testContent.indexOf("def \"", startIndex + 1);
+        if (endIndex == -1) endIndex = testContent.length();
 
         testContent.substring(startIndex, endIndex)
     }
@@ -334,20 +339,20 @@ class TestClassificationPlugin {
         ]
 
         // Print report
-        println "Test Classification Report"
-        println "=" * 40
-        println "Total Tests: ${report.statistics.totalTests}"
-        println "\nBy Type:"
+        System.out.println("Test Classification Report");
+        System.out.println("=" * 40);
+        System.out.println("Total Tests: ${report.statistics.totalTests}");
+        System.out.println("\nBy Type:");
         report.statistics.byType.each { type, count ->
-            println "  ${type}: ${count}"
+            System.out.println("  ${type}: ${count}");
         }
-        println "\nBy Category:"
+        System.out.println("\nBy Category:");
         report.statistics.byCategory.each { category, count ->
-            println "  ${category}: ${count}"
+            System.out.println("  ${category}: ${count}");
         }
-        println "\nBy Complexity:"
+        System.out.println("\nBy Complexity:");
         report.statistics.byComplexity.each { complexity, count ->
-            println "  ${complexity}: ${count}"
+            System.out.println("  ${complexity}: ${count}");
         }
 
         // Save detailed report

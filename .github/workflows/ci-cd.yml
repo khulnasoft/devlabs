@@ -11,7 +11,6 @@ env:
   GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true
 
 jobs:
-  # Build and test all projects
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
@@ -39,22 +38,11 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: gradle
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Build and Test
+        run: |
+          chmod +x gradlew
+          ./gradlew clean build test integrationTest --stacktrace --info
         working-directory: intellij-projects/${{ matrix.project }}
-
-      - name: Build project
-        run: ./gradlew clean build --stacktrace --info
-        working-directory: intellij-projects/${{ matrix.project }}
-
-      - name: Run tests
-        run: ./gradlew test --stacktrace --info
-        working-directory: intellij-projects/${{ matrix.project }}
-
-      - name: Run integration tests
-        run: ./gradlew integrationTest --stacktrace --info
-        working-directory: intellij-projects/${{ matrix.project }}
-        continue-on-error: true
 
       - name: Generate test report
         uses: dorny/test-reporter@v1
@@ -70,11 +58,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.project }}
-          path: |
-            intellij-projects/${{ matrix.project }}/build/reports/
-            intellij-projects/${{ matrix.project }}/build/test-results/
+          path: intellij-projects/${{ matrix.project }}/build/
 
-  # Static analysis
   static-analysis:
     name: Static Analysis
     runs-on: ubuntu-latest
@@ -91,12 +76,9 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      - name: Run SpotBugs
-        run: ./gradlew spotbugsMain spotbugsTest --stacktrace --info
-        continue-on-error: true
-
-      - name: Run Checkstyle
-        run: ./gradlew checkstyleMain checkstyleTest --stacktrace --info
+      - name: Run Static Analysis
+        run: |
+          ./gradlew spotbugsMain spotbugsTest checkstyleMain checkstyleTest
         continue-on-error: true
 
       - name: Upload static analysis reports
@@ -104,11 +86,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: static-analysis-reports
-          path: |
-            **/build/reports/spotbugs/
-            **/build/reports/checkstyle/
+          path: build/reports
 
-  # Code coverage
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
@@ -128,24 +107,13 @@ jobs:
       - name: Generate coverage report
         run: ./gradlew jacocoTestReport --stacktrace --info
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./build/reports/jacoco/test/jacocoTestReport.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-
-      - name: Upload coverage artifacts
+      - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-reports
-          path: |
-            **/build/reports/jacoco/
-            **/build/test-results/
+          name: coverage-report
+          path: build/reports/jacoco
 
-  # Build tool projects
   build-tools:
     name: Build Tool Examples
     runs-on: ubuntu-latest
@@ -165,14 +133,13 @@ jobs:
       - name: Build Gradle examples
         run: |
           cd build-tool-projects/gradle/
-          # Add build commands if needed
+          ./gradlew build
 
       - name: Validate Maven structure
         run: |
           cd build-tool-projects/maven/
-          # Add validation commands if needed
+          mvn validate
 
-  # Docker builds
   docker:
     name: Docker Build
     runs-on: ubuntu-latest
@@ -189,15 +156,12 @@ jobs:
       - name: Build Docker images
         run: |
           cd docker/
-          docker build -f Dockerfile.react-weather-app -t khulnasoft/react-weather-app:${{ github.sha }} .
-          docker build -f Dockerfile.react-weather-app -t khulnasoft/react-weather-app:latest .
+          docker build -t khulnasoft/react-weather-app:${{ github.sha }} -t khulnasoft/react-weather-app:latest .
 
       - name: Test Docker images
         run: |
-          # Add basic smoke tests for Docker images
-          echo "Docker image built successfully"
+          docker run --rm khulnasoft/react-weather-app:${{ github.sha }}
 
-  # Deploy documentation
   deploy-docs:
     name: Deploy Documentation
     runs-on: ubuntu-latest

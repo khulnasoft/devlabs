@@ -99,32 +99,34 @@ class Database {
       return await this._decrypt(data);
     };
 
-    // Legacy unencrypted method (DEPRECATED)
-    this.create = (key, value) => {
+    // Async version: store encrypted value
+    this.create = async (key, value) => {
       if (key === undefined || value === undefined) {
         throw new Error("Database key and value must be declared");
       }
-      // For safety, write encrypted by default (call createEncrypted instead in new code)
-      localStorage.setItem(key, value);
+      const encrypted = await this._encrypt(value.toString());
+      localStorage.setItem(key, encrypted);
     };
 
     this.delete = (key) => {
       if (key === undefined) {
-        throw new Error("Database key and value must be declared");
-    this.updateEncrypted = async (key, value) => {
-      await this.createEncrypted(key, value);
-    }
-
+        throw new Error("Database key must be declared");
       }
       localStorage.removeItem(key);
     };
 
-    this.update = (key, value) => {
-      this.create(key, value);
+    this.updateEncrypted = async (key, value) => {
+      await this.createEncrypted(key, value);
     };
 
-    this.get = key => {
-      return localStorage.getItem(key);
+    this.update = async (key, value) => {
+      await this.create(key, value);
+    };
+
+    this.get = async (key) => {
+      const data = localStorage.getItem(key);
+      if (!data) return null;
+      return await this._decrypt(data);
     };
 
     this.countItems = () => {

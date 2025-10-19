@@ -16,7 +16,7 @@ public interface Validator<T> {
      * @param value the value to validate
      * @throws ValidationException if validation fails
      */
-    void validate(T value) throws ValidationException;
+    public void validate(T value) throws ValidationException;
 }
 
 /**

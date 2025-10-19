@@ -4,12 +4,12 @@
 ## Feature: Number Classification
 As a developer, I want to classify numbers as even or odd so that I can implement business logic correctly.
 
-### Scenario: Even Number Classification
+### Scenario: Positive Even Number Classification
 Given that I have a positive even number
 When I call the check method on the OddEvenCamp
 Then I should get 1 as the result
 
-### Scenario: Odd Number Classification
+### Scenario: Positive Odd Number Classification
 Given that I have a positive odd number
 When I call the check method on the OddEvenCamp
 Then I should get 0 as the result
@@ -56,13 +56,7 @@ For comprehensive testing, I need various test data scenarios:
 | 2     | 1        | Positive |
 | 100   | 1        | Positive |
 | 101   | 0        | Positive |
-| 1000  | 1        | Positive |
-| 1001  | 0        | Positive |
-
-## Edge Cases to Test
-- Zero (boundary case)
-- Negative numbers (error case)
-- Very large numbers (performance case)
-- Null input (error handling)
-- Maximum integer value (boundary case)
-- Minimum integer value (boundary case)
+| 1000000000 | 1        | Positive |
+| 1000000001 | 0        | Positive |
+| 2147483647 | 1        | Positive |
+| -2147483648 | Exception | Negative |

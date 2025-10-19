@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.khulnasoft.khulnasoftins</groupId>
+  <artifactId>pom</artifactId>
+  <version>1.10.2-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>Khulnasoft Plugin Main Module</name>
+  <description>The module that constitutes the main module of Khulnasoft Plugin</description>
+  <licenses>
+    <license>
+      <name>The MIT license</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <modules>
+    <module>khulnasoft-devops-shaded</module>
+    <module>khulnasoft-devops</module>
+    <module>khulnasoft-devops-extend</module>
+  </modules>
+
+  <scm>
+    <connection>scm:git:git://github.com/khulnasoft/devlabs.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/khulnasoft/devlabs.git</developerConnection>
+    <url>https://github.com/khulnasoft/devlabs</url>
+    <tag>pom-1.3</tag>
+  </scm>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <build.type>private</build.type>
+    <project.patchManagement.system>github</project.patchManagement.system>
+    <patch.request.organisation>khulnasoft</patch.request.organisation>
+    <patch.request.repository>jenkins</patch.request.repository>
+    <project.patchManagement.url>https://api.github.com</project.patchManagement.url>
+    <patch.tracker.serverId>jenkins-jira</patch.tracker.serverId>
+    <findbugs-maven-plugin.version>3.0.1</findbugs-maven-plugin.version>
+    <java.level>11</java.level>
+    <jenkins.version>2.426.2</jenkins.version>
+    <spotbugs.failOnError>false</spotbugs.failOnError>
+    <khulnasoft.devops.metrics.collection>true</khulnasoft.devops.metrics.collection>
+    <build.parallel.execution>true</build.parallel.execution>
+    <build.max.parallel.jobs>4</build.max.parallel.jobs>
+    <build.optimization.enabled>true</build.optimization.enabled>
+    <build.cache.enabled>true</build.cache.enabled>
+    <build.cache.strategy>incremental</build.cache.strategy>
+    <build.cache.max.size>1GB</build.cache.max.size>
+    <khulnasoft.notifications.enabled>true</khulnasoft.notifications.enabled>
+    <khulnasoft.notification.channels>email,slack</khulnasoft.notification.channels>
+    <khulnasoft.security.scan.enabled>true</khulnasoft.security.scan.enabled>
+    <build.security.vulnerability.threshold>high</build.security.vulnerability.threshold>
+    <build.performance.cpu.threshold>80</build.performance.cpu.threshold>
+    <build.performance.memory.threshold>70</build.performance.memory.threshold>
+    <surefire.timeout>600</surefire.timeout>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/public/</url>
+    </repository>
+    <repository>
+      <id>khulnasoft-artifactory</id>
+      <name>Khulnasoft Releases</name>
+      <url>https://khulnasoft.jfrog.io/khulnasoft/ext-releases-local</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.khulnasoft</groupId>
+      <artifactId>khulnasoft</artifactId>
+      <version>1.6.5.0</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>local</id>
+      <activation>
+        <property>
+          <name>repos.url</name>
+        </property>
+      </activation>
+      <distributionManagement>
+        <repository>
+          <id>local-artifactory</id>
+          <url>${repos.url}</url>
+        </repository>
+        <snapshotRepository>
+          <id>local-artifactory</id>
+          <url>${repos.url}</url>
+        </snapshotRepository>
+      </distributionManagement>
+    </profile>
+    <profile>
+      <id>jenkins-2</id>
+      <properties>
+        <jenkins.version>2.426.2</jenkins.version>
+        <java.level>11</java.level>
+      </properties>
+    </profile>
+    <profile>
+      <id>coverage</id>
+      <activation>
+        <jdk>!11</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>cobertura-maven-plugin</artifactId>
+            <version>2.7</version>
+            <configuration>
+              <instrumentation>
+                <excludes>
+                  <exclude>com/khulnasoft/khulnasoftjenkins/utils/LogFileCallable.class</exclude>
+                </excludes>
+              </instrumentation>
+              <formats>
+                <format>xml</format>
+              </formats>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>cobertura</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.0.0-M5</version>
+        <configuration>
+          <forkCount>2</forkCount>
+          <useFile>false</useFile>
+          <systemPropertyVariables>
+            <jenkins.model.Jenkins.slaveAgentPort>-1</jenkins.model.Jenkins.slaveAgentPort>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

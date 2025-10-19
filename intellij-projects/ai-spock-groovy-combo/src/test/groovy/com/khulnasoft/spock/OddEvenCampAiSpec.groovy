@@ -9,7 +9,7 @@ import spock.lang.Unroll
  * AI-Enhanced Spock Test demonstrating natural language test generation
  * and automatic test classification capabilities
  */
-class OddEvenCampAiSpec extends Specification {
+public class OddEvenCampAiSpec extends Specification {
 
     @Subject
     OddEvenCamp oddEvenCamp = new OddEvenCampImpl(new NegativeValidator())
@@ -107,7 +107,7 @@ class OddEvenCampAiSpec extends Specification {
 /**
  * Integration test example showing database and external service testing
  */
-class OddEvenCampIntegrationSpec extends Specification {
+public class OddEvenCampIntegrationSpec extends Specification {
 
     @Subject
     OddEvenCamp oddEvenCamp = new OddEvenCampImpl(new NegativeValidator())
@@ -134,7 +134,7 @@ class OddEvenCampIntegrationSpec extends Specification {
 /**
  * Performance test example
  */
-class OddEvenCampPerformanceSpec extends Specification {
+public class OddEvenCampPerformanceSpec extends Specification {
 
     @Subject
     OddEvenCamp oddEvenCamp = new OddEvenCampImpl(new NegativeValidator())
@@ -165,7 +165,7 @@ interface ExternalValidationService {
 /**
  * Service wrapper for integration testing
  */
-class OddEvenCampServiceWrapper {
+public class OddEvenCampServiceWrapper {
     private final OddEvenCamp camp
     private final ExternalValidationService validationService
 
@@ -184,7 +184,7 @@ class OddEvenCampServiceWrapper {
 /**
  * Custom validator for testing validation logic
  */
-class NegativeValidator implements Validator<Integer> {
+public class NegativeValidator implements Validator<Integer> {
     @Override
     void validate(Integer value) {
         if (value == null || value <= 0) {

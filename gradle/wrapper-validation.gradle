@@ -1,0 +1,157 @@
+// Gradle wrapper validation and security configuration
+// This file provides tasks to validate the Gradle wrapper integrity and security
+
+import java.security.MessageDigest
+
+// Task to validate Gradle wrapper checksum
+tasks.register('validateWrapperChecksum') {
+    group = 'verification'
+    description = 'Validates Gradle wrapper JAR checksum for security'
+
+    doLast {
+        def wrapperJar = file('gradle/wrapper/gradle-wrapper.jar')
+        def propertiesFile = file('gradle/wrapper/gradle-wrapper.properties')
+
+        if (!wrapperJar.exists()) {
+            throw new GradleException("Gradle wrapper JAR not found at: ${wrapperJar.absolutePath}")
+        }
+
+        if (!propertiesFile.exists()) {
+            throw new GradleException("Gradle wrapper properties not found at: ${propertiesFile.absolutePath}")
+        }
+
+        // Read the expected checksum from properties file
+        def properties = new Properties()
+        propertiesFile.withInputStream { properties.load(it) }
+        def expectedChecksum = properties.getProperty('distributionSha256Sum')
+
+        if (!expectedChecksum) {
+            logger.warn('No distributionSha256Sum found in gradle-wrapper.properties')
+            return
+        }
+
+        // Calculate actual checksum
+        def actualChecksum = calculateSHA256(wrapperJar)
+
+        if (expectedChecksum.toLowerCase() != actualChecksum.toLowerCase()) {
+            throw new GradleException("""
+                Gradle wrapper JAR checksum validation failed!
+                Expected: ${expectedChecksum}
+                Actual:   ${actualChecksum}
+                This could indicate a compromised wrapper. Please verify the source and regenerate if necessary.
+            """.stripIndent())
+        }
+
+        println "Gradle wrapper checksum validation passed"
+    }
+}
+
+// Task to validate wrapper properties security
+tasks.register('validateWrapperProperties') {
+    group = 'verification'
+    description = 'Validates Gradle wrapper properties for security best practices'
+
+    doLast {
+        def propertiesFile = file('gradle/wrapper/gradle-wrapper.properties')
+        def properties = new Properties()
+        propertiesFile.withInputStream { properties.load(it) }
+
+        // Check for HTTPS URLs
+        def distributionUrl = properties.getProperty('distributionUrl', '')
+        if (distributionUrl && !distributionUrl.startsWith('https://')) {
+            throw new GradleException("Insecure distribution URL detected: ${distributionUrl}. HTTPS is required.")
+        }
+
+        // Check for reasonable version
+        def distributionVersion = extractGradleVersion(distributionUrl)
+        if (distributionVersion) {
+            def versionParts = distributionVersion.split('\\.')
+            if (versionParts.length >= 2) {
+                def major = versionParts[0].toInteger()
+                def minor = versionParts[1].toInteger()
+
+                // Warn for very old versions (consider updating this threshold periodically)
+                if (major < 7 || (major == 7 && minor < 4)) {
+                    logger.warn("Gradle version ${distributionVersion} is relatively old. Consider updating to a more recent version.")
+                }
+            }
+        }
+
+        // Check for checksum presence
+        if (!properties.getProperty('distributionSha256Sum')) {
+            throw new GradleException('distributionSha256Sum is missing from gradle-wrapper.properties. This is required for security.')
+        }
+
+        println "Gradle wrapper properties validation passed"
+    }
+}
+
+// Task to validate entire wrapper setup
+tasks.register('validateWrapper') {
+    group = 'verification'
+    description = 'Validates complete Gradle wrapper setup for security and integrity'
+
+    dependsOn validateWrapperChecksum, validateWrapperProperties
+
+    doLast {
+        println "Gradle wrapper validation completed successfully"
+    }
+}
+
+// Helper function to calculate SHA256 checksum
+String calculateSHA256(File file) {
+    def digest = MessageDigest.getInstance('SHA-256')
+    file.withInputStream { stream ->
+        def buffer = new byte[8192]
+        def len
+        while ((len = stream.read(buffer)) > 0) {
+            digest.update(buffer, 0, len)
+        }
+    }
+    return digest.digest().collect { String.format('%02x', it) }.join('')
+}
+
+// Helper function to extract Gradle version from distribution URL
+String extractGradleVersion(String distributionUrl) {
+    def matcher = distributionUrl =~ /gradle-(\d+\.\d+(?:\.\d+)?)-.*\.zip/
+    return matcher.find() ? matcher.group(1) : null
+}
+
+// Task to update wrapper checksum (useful when updating Gradle version)
+tasks.register('updateWrapperChecksum') {
+    group = 'build-setup'
+    description = 'Updates the Gradle wrapper checksum after version upgrade'
+
+    doLast {
+        def wrapperJar = file('gradle/wrapper/gradle-wrapper.jar')
+        def propertiesFile = file('gradle/wrapper/gradle-wrapper.properties')
+
+        if (!wrapperJar.exists()) {
+            throw new GradleException("Gradle wrapper JAR not found. Run 'gradle wrapper' first.")
+        }
+
+        def checksum = calculateSHA256(wrapperJar)
+
+        // Update properties file
+        def content = propertiesFile.text
+        content = content.replaceFirst(/(distributionSha256Sum=).*/, "distributionSha256Sum=${checksum}")
+
+        propertiesFile.text = content
+
+        println "Updated gradle-wrapper.properties with new checksum: ${checksum}"
+    }
+}
+
+// Add wrapper validation to build process
+tasks.named('build').configure {
+    dependsOn validateWrapper
+}
+
+// Security check for CI/CD environments
+if (System.getenv('CI') == 'true') {
+    tasks.named('validateWrapper').configure {
+        doFirst {
+            println "Running enhanced wrapper validation in CI environment"
+        }
+    }
+}

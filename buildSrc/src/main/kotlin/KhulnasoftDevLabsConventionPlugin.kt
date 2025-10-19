@@ -1,6 +1,7 @@
 package com.khulnasoft.devlabs
 
 import com.diffplug.gradle.spotless.SpotlessExtension
+import com.diffplug.gradle.spotless.SpotlessPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -11,48 +12,72 @@ class KhulnasoftDevLabsConventionPlugin : Plugin<Project> {
         with(project) {
             // Apply common plugins
             pluginManager.apply("java")
+            pluginManager.apply("org.jetbrains.kotlin.jvm")
+            pluginManager.apply(SpringBootPlugin::class.java)
+            pluginManager.apply("io.spring.dependency-management")
             pluginManager.apply("idea")
             pluginManager.apply("com.diffplug.spotless")
 
             // Configure Java compatibility
-            configureJava()
+            configureJava(this)
 
             // Configure Spotless for code formatting
             configureSpotless()
 
             // Configure repositories
-            repositories {
-                mavenCentral()
-                gradlePluginPortal()
-            }
+            configureRepositories()
         }
     }
 
-    private fun Project.configureJava() {
+    private fun Project.configureJava(project: Project) {
         java {
             sourceCompatibility = JavaVersion.VERSION_21
             targetCompatibility = JavaVersion.VERSION_21
+        }
+        tasks.withType<JavaCompile> {
+            options.encoding = "UTF-8"
         }
     }
 
     private fun Project.configureSpotless() {
         configure<SpotlessExtension> {
             java {
-                googleJavaFormat()
+                googleJavaFormat("1.11.0")
                 removeUnusedImports()
+                importOrder("java", "javax", "")
                 trimTrailingWhitespace()
                 endWithNewline()
             }
             kotlin {
-                ktfmt()
+                target("**/*.kt")
+                ktfmt("0.37")
                 trimTrailingWhitespace()
                 endWithNewline()
             }
-            groovy {
-                greclipse()
+            kotlinGradle {
+                target("**/*.gradle.kts")
+                ktfmt("0.37")
                 trimTrailingWhitespace()
                 endWithNewline()
             }
+            format("misc") {
+                target(
+                    "**/*.adoc",
+                    "**/*.fragments",
+                    "**/*.md",
+                    "**/.gitignore",
+                    "**/.yaml-lint"
+                )
+                trimTrailingWhitespace()
+                endWithNewline()
+            }
+        }
+    }
+
+    private fun Project.configureRepositories() {
+        repositories {
+            mavenCentral()
+            gradlePluginPortal()
         }
     }
 }

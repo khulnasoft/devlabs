@@ -140,7 +140,7 @@ public class GlobalExceptionHandler {
 /**
  * Base exception for validation errors.
  */
-class ValidationException extends RuntimeException {
+public class ValidationException extends RuntimeException {
     public ValidationException(String message) {
         super(message);
     }
@@ -152,7 +152,7 @@ class ValidationException extends RuntimeException {
 /**
  * Exception for resource not found errors.
  */
-class ResourceNotFoundException extends RuntimeException {
+public class ResourceNotFoundException extends RuntimeException {
     public ResourceNotFoundException(String message) {
         super(message);
     }
@@ -213,7 +213,7 @@ abstract class BaseRestController {
 /**
  * API Response wrapper for consistent response format.
  */
-class ApiResponse<T> {
+public class ApiResponse<T> {
 
     private boolean success;
     private String message;
@@ -274,7 +274,7 @@ class ApiResponse<T> {
 /**
  * Utility methods for REST operations.
  */
-class RestUtils {
+public class RestUtils {
 
     /**
      * Extracts pagination parameters from request.
@@ -303,7 +303,7 @@ class RestUtils {
 /**
  * Pagination parameters.
  */
-class PaginationParams {
+public class PaginationParams {
     private final int page;
     private final int size;
 

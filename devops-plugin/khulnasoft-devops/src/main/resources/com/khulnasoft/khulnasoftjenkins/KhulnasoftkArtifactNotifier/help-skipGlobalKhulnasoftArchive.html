@@ -1,0 +1,18 @@
+<div>
+  <p>
+    When enabled, this job will skip the global Khulnasoft archiving behavior configured at the system level.
+    This is useful when you want this specific job to handle artifact archiving differently or not at all.
+  </p>
+  <p>
+    <strong>Use cases:</strong>
+  </p>
+  <ul>
+    <li>Jobs that should not send artifacts to Khulnasoft</li>
+    <li>Jobs that handle artifact archiving through custom scripts or other means</li>
+    <li>Jobs in development or testing phases where Khulnasoft integration is not needed</li>
+  </ul>
+  <p>
+    <strong>Note:</strong> This setting only affects the automatic archiving behavior.
+    You can still manually trigger artifact archiving using the RunDelegate.archive() method in your build scripts.
+  </p>
+</div>

@@ -1,0 +1,101 @@
+plugins {
+    id "org.sonarqube" version "7.0.0.6105"
+}
+
+sonar {
+    properties {
+        property 'sonar.host.url', 'https://sonarcloud.io'
+        property 'sonar.organization', 'khulnasoft'
+        property 'sonar.projectKey', 'com.khulnasoft.devlabs'
+        property 'sonar.projectName', 'DevLabs'
+        property 'sonar.projectVersion', project.version
+
+        // Language settings
+        property 'sonar.language', 'java'
+        property 'sonar.sourceEncoding', 'UTF-8'
+
+        // Source directories
+        property 'sonar.sources', 'src/main/java'
+        property 'sonar.tests', 'src/test/java'
+
+        // Exclusions
+        property 'sonar.exclusions', [
+            '**/build/**',
+            '**/target/**',
+            '**/node_modules/**',
+            '**/*.min.js',
+            '**/generated/**'
+        ].join(',')
+
+        // Test coverage
+        property 'sonar.coverage.jacoco.xmlReportPaths', layout.buildDirectory.map { Directory directory ->
+            "${directory}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
+        }
+
+        // Code quality profiles
+        property 'sonar.java.checkstyle.reportPaths', layout.buildDirectory.map { Directory directory ->
+            "${directory}/reports/checkstyle/main.xml"
+        }
+        property 'sonar.java.spotbugs.reportPaths', layout.buildDirectory.map { Directory directory ->
+            "${directory}/reports/spotbugs/main.xml"
+        }
+
+        // Security analysis
+        property 'sonar.security.reportPaths', layout.buildDirectory.map { Directory directory ->
+            "${directory}/reports/dependency-check-report.json"
+        }
+
+        // Additional properties for better analysis
+        property 'sonar.java.binaries', layout.buildDirectory.map { Directory directory ->
+            "${directory}/classes"
+        }
+
+        // Coverage exclusions for generated code
+        property 'sonar.coverage.exclusions', [
+            '**/config/**',
+            '**/generated/**',
+            '**/*Application.java',
+            '**/model/**',
+            '**/dto/**'
+        ].join(',')
+
+        // Duplication settings
+        property 'sonar.cpd.exclusions', [
+            '**/model/**',
+            '**/dto/**'
+        ].join(',')
+
+        // Issue tracking
+        property 'sonar.issue.ignore.multicriteria', 'e1,e2'
+        property 'sonar.issue.ignore.multicriteria.e1.ruleKey', 'java:S106'
+        property 'sonar.issue.ignore.multicriteria.e1.resourceKey', '**/src/test/**'
+        property 'sonar.issue.ignore.multicriteria.e2.ruleKey', 'java:S1128'
+        property 'sonar.issue.ignore.multicriteria.e2.resourceKey', '**/src/test/**'
+    }
+}
+
+// Enhanced task configuration
+tasks.named('sonar').configure {
+    dependsOn jacocoRootReport
+    group = 'verification'
+    description = 'Runs SonarQube analysis'
+
+    doFirst {
+        println "Running SonarQube analysis for ${project.name} v${project.version}"
+    }
+}
+
+// Add SonarQube analysis validation
+tasks.register('validateSonarConfiguration') {
+    group = 'verification'
+    description = 'Validates SonarQube configuration'
+
+    doLast {
+        def sonarProps = sonar.properties
+        assert sonarProps['sonar.host.url'] : 'SonarQube host URL is required'
+        assert sonarProps['sonar.projectKey'] : 'SonarQube project key is required'
+        assert sonarProps['sonar.organization'] : 'SonarQube organization is required'
+
+        println "SonarQube configuration validation passed for project: ${sonarProps['sonar.projectKey']}"
+    }
+}

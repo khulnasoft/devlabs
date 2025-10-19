@@ -1,16 +1,22 @@
-package com.khulnasoft.spock.ai
+package com.khulnasoft.spock.ai;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * AI-Assisted Test Failure Reason Analyzer
  * Analyzes test failures and provides intelligent suggestions for fixes
  */
-class TestFailureAnalyzer {
+public class TestFailureAnalyzer {
 
-    private final FailurePatternMatcher patternMatcher
-    private final FixSuggestionEngine suggestionEngine
-    private final ContextAnalyzer contextAnalyzer
+    private final FailurePatternMatcher patternMatcher;
+    private final FixSuggestionEngine suggestionEngine;
+    private final ContextAnalyzer contextAnalyzer;
 
-    TestFailureAnalyzer() {
+    public TestFailureAnalyzer() {
         this.patternMatcher = new FailurePatternMatcher()
         this.suggestionEngine = new FixSuggestionEngine()
         this.contextAnalyzer = new ContextAnalyzer()
@@ -19,25 +25,25 @@ class TestFailureAnalyzer {
     /**
      * Analyzes a test failure and provides detailed analysis and suggestions.
      */
-    FailureAnalysis analyzeFailure(String testName, String failureMessage, String stackTrace, String testCode = null) {
-        def analysis = new FailureAnalysis()
+    public FailureAnalysis analyzeFailure(String testName, String failureMessage, String stackTrace, String testCode) {
+        FailureAnalysis analysis = new FailureAnalysis();
 
-        analysis.testName = testName
-        analysis.failureMessage = failureMessage
-        analysis.stackTrace = stackTrace
-        analysis.testCode = testCode
+        analysis.testName = testName;
+        analysis.failureMessage = failureMessage;
+        analysis.stackTrace = stackTrace;
+        analysis.testCode = testCode;
 
         // Identify failure patterns
-        analysis.failurePatterns = patternMatcher.identifyPatterns(failureMessage, stackTrace)
+        analysis.failurePatterns = patternMatcher.identifyPatterns(failureMessage, stackTrace);
 
         // Analyze context
-        analysis.context = contextAnalyzer.analyzeContext(testCode, stackTrace)
+        analysis.context = contextAnalyzer.analyzeContext(testCode, stackTrace);
 
         // Generate suggestions
-        analysis.suggestions = suggestionEngine.generateSuggestions(analysis)
+        analysis.suggestions = suggestionEngine.generateSuggestions(analysis);
 
         // Calculate confidence
-        analysis.confidence = calculateOverallConfidence(analysis)
+        analysis.confidence = calculateOverallConfidence(analysis);
 
         analysis
     }
@@ -45,32 +51,38 @@ class TestFailureAnalyzer {
     /**
      * Batch analyzes multiple test failures.
      */
-    List<FailureAnalysis> analyzeFailures(List<FailureInfo> failures) {
-        failures.collect { failure ->
-            analyzeFailure(failure.testName, failure.message, failure.stackTrace, failure.testCode)
-        }
+    public List<FailureAnalysis> analyzeFailures(List<FailureInfo> failures) {
+        return failures.stream()
+                .map(failure -> analyzeFailure(failure.testName, failure.message, failure.stackTrace, failure.testCode))
+                .collect(java.util.stream.Collectors.toList());
     }
 
     private double calculateOverallConfidence(FailureAnalysis analysis) {
-        def confidence = 0.0
+        double confidence = 0.0;
 
         // Pattern match confidence
-        confidence += analysis.failurePatterns.sum { it.confidence } * 0.4
+        if (analysis.failurePatterns != null) {
+            confidence += analysis.failurePatterns.stream().mapToDouble(p -> p.confidence).sum() * 0.4;
+        }
 
         // Context analysis confidence
-        confidence += analysis.context.confidence * 0.3
+        if (analysis.context != null) {
+            confidence += analysis.context.confidence * 0.3;
+        }
 
         // Suggestion quality confidence
-        confidence += analysis.suggestions.sum { it.confidence } * 0.3
+        if (analysis.suggestions != null) {
+            confidence += analysis.suggestions.stream().mapToDouble(s -> s.confidence).sum() * 0.3;
+        }
 
-        Math.min(confidence, 1.0)
+        return Math.min(confidence, 1.0);
     }
 }
 
 /**
  * Identifies common failure patterns in test failures.
  */
-class FailurePatternMatcher {
+public class FailurePatternMatcher {
 
     enum FailurePattern {
         ASSERTION_ERROR("Assertion failed"),
@@ -86,79 +98,82 @@ class FailurePatternMatcher {
 
         final String description
 
-        FailurePattern(String description) {
-            this.description = description
-        }
+        FailurePattern(
+        String description)
+        {
+            this.description =description
     }
 
-    List<PatternMatch> identifyPatterns(String failureMessage, String stackTrace) {
-        def patterns = []
-        def combinedText = (failureMessage + " " + stackTrace).toLowerCase()
+    }
+
+    public List<PatternMatch> identifyPatterns(String failureMessage, String stackTrace) {
+        List<PatternMatch> patterns = new ArrayList<>();
+        String combinedText = (failureMessage + " " + stackTrace).toLowerCase();
 
         // Check for each pattern
-        FailurePattern.values().each { pattern ->
-            def confidence = calculatePatternConfidence(pattern, combinedText)
+        for (FailurePattern pattern : FailurePattern.values()) {
+            double confidence = calculatePatternConfidence(pattern, combinedText);
             if (confidence > 0.3) {
-                patterns << new PatternMatch(
-                    pattern: pattern,
-                    confidence: confidence,
-                    indicators: findPatternIndicators(pattern, combinedText)
-                )
+                patterns.add(new PatternMatch(pattern, confidence, findPatternIndicators(pattern, combinedText)));
             }
         }
 
-        patterns.sort { -it.confidence }
+        patterns.sort((a, b) -> Double.compare(b.confidence, a.confidence));
+        return patterns;
     }
 
-    private double calculatePatternConfidence(FailurePattern pattern, String text) {
-        def indicators = getPatternIndicators(pattern)
-        def matches = 0
+}
 
-        indicators.each { indicator ->
+    private double calculatePatternConfidence(FailurePattern pattern, String text) {
+        List<String> indicators = getPatternIndicators(pattern);
+        int matches = 0;
+
+        for (String indicator : indicators) {
             if (text.contains(indicator.toLowerCase())) {
-                matches++
+                matches++;
             }
         }
 
-        return indicators.isEmpty() ? 0.0 : (matches / indicators.size())
+        return indicators.isEmpty() ? 0.0 : (double) matches / indicators.size();
     }
 
     private List<String> getPatternIndicators(FailurePattern pattern) {
         switch (pattern) {
-            case FailurePattern.ASSERTION_ERROR:
-                return ['assertionerror', 'assert', 'expected', 'but was', 'did not expect']
-            case FailurePattern.NULL_POINTER:
-                return ['nullpointerexception', 'null pointer', 'cannot invoke', 'because "this']
-            case FailurePattern.TIMEOUT:
-                return ['timeout', 'timed out', 'interrupted', 'wait timeout']
-            case FailurePattern.RESOURCE_LEAK:
-                return ['resource leak', 'connection leak', 'memory leak', 'file handle leak']
-            case FailurePattern.MOCK_SETUP:
-                return ['mock', 'stub', 'when', 'verify', 'argument mismatch']
-            case FailurePattern.TEST_ISOLATION:
-                return ['test isolation', 'cleanup', 'teardown', 'setup', 'state']
-            case FailurePattern.DEPENDENCY_MISSING:
-                return ['classnotfound', 'nosuchmethod', 'nosuchfield', 'missing dependency']
-            case FailurePattern.CONFIGURATION_ERROR:
-                return ['configuration', 'property', 'setting', 'environment', 'port']
-            case FailurePattern.NETWORK_ERROR:
-                return ['connection refused', 'network unreachable', 'socket', 'http host']
-            case FailurePattern.DATABASE_ERROR:
-                return ['sql', 'database', 'connection', 'jdbc', 'hibernate']
+            case ASSERTION_ERROR:
+                return Arrays.asList("assertionerror", "assert", "expected", "but was", "did not expect");
+            case NULL_POINTER:
+                return Arrays.asList("nullpointerexception", "null pointer", "cannot invoke", "because \"this");
+            case TIMEOUT:
+                return Arrays.asList("timeout", "timed out", "interrupted", "wait timeout");
+            case RESOURCE_LEAK:
+                return Arrays.asList("resource leak", "connection leak", "memory leak", "file handle leak");
+            case MOCK_SETUP:
+                return Arrays.asList("mock", "stub", "when", "verify", "argument mismatch");
+            case TEST_ISOLATION:
+                return Arrays.asList("test isolation", "cleanup", "teardown", "setup", "state");
+            case DEPENDENCY_MISSING:
+                return Arrays.asList("classnotfound", "nosuchmethod", "nosuchfield", "missing dependency");
+            case CONFIGURATION_ERROR:
+                return Arrays.asList("configuration", "property", "setting", "environment", "port");
+            case NETWORK_ERROR:
+                return Arrays.asList("connection refused", "network unreachable", "socket", "http host");
+            case DATABASE_ERROR:
+                return Arrays.asList("sql", "database", "connection", "jdbc");
             default:
-                return []
+                return Arrays.asList();
         }
     }
 
     private List<String> findPatternIndicators(FailurePattern pattern, String text) {
-        getPatternIndicators(pattern).findAll { text.contains(it.toLowerCase()) }
+        return getPatternIndicators(pattern).stream().filter(indicator -> text.contains(indicator.toLowerCase()))
+                .collect(java.util.stream.Collectors.toList());
     }
 }
 
 /**
  * Analyzes the context of test failures.
  */
-class ContextAnalyzer {
+public class ContextAnalyzer {
 
     ContextInfo analyzeContext(String testCode, String stackTrace) {
         def context = new ContextInfo()
@@ -233,7 +248,7 @@ class ContextAnalyzer {
 /**
  * Generates fix suggestions for test failures.
  */
-class FixSuggestionEngine {
+public class FixSuggestionEngine {
 
     List<FixSuggestion> generateSuggestions(FailureAnalysis analysis) {
         def suggestions = []
@@ -351,64 +366,71 @@ class FixSuggestionEngine {
 /**
  * Represents a pattern match result.
  */
-class PatternMatch {
-    FailurePatternMatcher.FailurePattern pattern
-    double confidence
-    List<String> indicators
+public class PatternMatch {
+    FailurePatternMatcher.FailurePattern pattern;
+    double confidence;
+    List<String> indicators;
 }
 
 /**
  * Represents a fix suggestion.
  */
-class FixSuggestion {
-    String type
-    String description
-    double confidence
-    List<String> actions
+public class FixSuggestion {
+    String type;
+    String description;
+    double confidence;
+    List<String> actions;
 
-    String toString() {
-        "FixSuggestion{type='$type', description='$description', confidence=${String.format('%.2f', confidence)}}"
+    public String toString() {
+        return "FixSuggestion{type='" + type + "', description='" + description + "', confidence="
+                + String.format("%.2f", confidence) + "}";
     }
 }
 
 /**
  * Represents the context information of a test failure.
  */
-class ContextInfo {
-    Map testStructure
-    Map stackTraceLocation
-    List<String> dependencies
-    double confidence
+public class ContextInfo {
+    Map testStructure;
+    Map stackTraceLocation;
+    List<String> dependencies;
+    double confidence;
 }
 
 /**
  * Represents a complete failure analysis.
  */
-class FailureAnalysis {
-    String testName
-    String failureMessage
-    String stackTrace
-    String testCode
-    List<PatternMatch> failurePatterns
-    ContextInfo context
-    List<FixSuggestion> suggestions
-    double confidence
+public class FailureAnalysis {
+    String testName;
+    String failureMessage;
+    String stackTrace;
+    String testCode;
+    List<PatternMatch> failurePatterns;
+    ContextInfo context;
+    List<FixSuggestion> suggestions;
+    double confidence;
 
-    String getSummary() {
-        def summary = new StringBuilder()
-        summary.append("Test: $testName\n")
-        summary.append("Failure: $failureMessage\n")
-        summary.append("Patterns: ${failurePatterns.collect { it.pattern }.join(', ')}\n")
-        summary.append("Top Suggestion: ${suggestions.first()?.description ?: 'No suggestions available'}\n")
-        summary.append("Confidence: ${String.format('%.1f%%', confidence * 100)}\n")
-        summary
+    public String getSummary() {
+        StringBuilder summary = new StringBuilder();
+        summary.append("Test: ").append(testName).append("\n");
+        summary.append("Failure: ").append(failureMessage).append("\n");
+        if (failurePatterns != null) {
+            summary.append("Patterns: ").append(
+                    failurePatterns.stream().map(p -> p.pattern.toString()).reduce((a, b) -> a + ", " + b).orElse(""))
+                    .append("\n");
+        }
+        if (suggestions != null && !suggestions.isEmpty()) {
+            summary.append("Top Suggestion: ").append(suggestions.get(0).description).append("\n");
+        }
+        summary.append("Confidence: ").append(String.format("%.1f%%", confidence * 100)).append("\n");
+        return summary.toString();
     }
 }
 
 /**
  * Information about a test failure.
  */
-class FailureInfo {
+public class FailureInfo {
     String testName
     String message
     String stackTrace
@@ -418,7 +440,7 @@ class FailureInfo {
 /**
  * Command-line interface for test failure analysis.
  */
-class FailureAnalyzerCli {
+public class FailureAnalyzerCli {
 
     static void main(String[] args) {
         if (args.length < 3) {
