@@ -1,10 +1,12 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: './src/index.js',
+  entry: './src/app.js',
   output: {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
+    clean: true,
   },
   module: {
     rules: [
@@ -24,9 +26,17 @@ module.exports = {
       }
     ]
   },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './src/index.html',
+      title: 'Webpack Build Tools Demo',
+      filename: 'index.html'
+    })
+  ],
   devServer: {
     contentBase: './dist',
     hot: true,
+    port: 8080,
   },
   mode: 'development'
 };

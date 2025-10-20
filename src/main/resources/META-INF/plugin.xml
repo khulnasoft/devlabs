@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<idea-plugin>
+    <id>com.khulnasoft.intellij</id>
+    <name>KhulnaSoft</name>
+    <version>1.6.13</version>
+    <vendor email="support@khulnasoft.com" url="https://khulnasoft.com">KhulnaSoft</vendor>
+
+    <description><![CDATA[
+        KhulnaSoft AI coding assistant for IntelliJ IDEA.
+
+        Features:
+        - Code completion powered by AI
+        - Chat interface for asking questions about code
+        - Code explanations and refactoring suggestions
+        - Multi-language support
+    ]]></description>
+
+    <change-notes><![CDATA[
+        Version 1.6.13:
+        - Updated protobuf definitions
+        - Improved chat functionality
+        - Enhanced code completion
+    ]]></change-notes>
+
+    <!-- IntelliJ IDEA -->
+    <idea-version since-build="223.0" until-build="241.*"/>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Status Bar Widget -->
+        <statusBarWidgetFactory implementation="com.khulnasoft.intellij.statusbar.KhulnasoftWidgetFactory" id="KhulnasoftWidget" order="last"/>
+
+        <!-- Editor Actions -->
+        <action id="Khulnasoft.ShowPreviousCompletion" class="com.khulnasoft.intellij.ShowPreviousCompletionAction">
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift COMMA"/>
+        </action>
+
+        <action id="Khulnasoft.ShowNextCompletion" class="com.khulnasoft.intellij.ShowNextCompletionAction">
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift PERIOD"/>
+        </action>
+
+        <action id="Khulnasoft.AcceptCompletion" class="com.khulnasoft.intellij.AcceptCompletionAction">
+            <keyboard-shortcut keymap="$default" first-keystroke="TAB"/>
+        </action>
+
+        <action id="Khulnasoft.DismissCompletion" class="com.khulnasoft.intellij.DismissCompletionAction">
+            <keyboard-shortcut keymap="$default" first-keystroke="ESCAPE"/>
+        </action>
+
+        <!-- Editor Listener -->
+        <editorFactoryListener implementation="com.khulnasoft.intellij.EditorListener"/>
+
+        <!-- Module Listener for workspace tracking -->
+        <projectService serviceImplementation="com.khulnasoft.intellij.KhulnasoftWorkspaceTracker"/>
+        <projectService serviceImplementation="com.khulnasoft.intellij.EditorManager"/>
+        <projectService serviceImplementation="com.khulnasoft.intellij.language_server.LanguageServerService"/>
+        <projectService serviceImplementation="com.khulnasoft.intellij.statusbar.KhulnasoftStatusService"/>
+        <projectService serviceImplementation="com.khulnasoft.intellij.auth.KhulnasoftAuthService"/>
+
+        <!-- Chat Window -->
+        <toolWindow id="Khulnasoft Chat" anchor="right" factoryClass="com.khulnasoft.intellij.chat_window.ChatViewerWindowFactory"/>
+    </extensions>
+
+    <project-components>
+        <component>
+            <implementation-class>com.khulnasoft.intellij.language_server.LanguageServerLauncherActivity</implementation-class>
+        </component>
+    </project-components>
+
+    <actions>
+        <!-- Login/Logout Actions -->
+        <group id="Khulnasoft.AuthMenu" text="KhulnaSoft" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <action id="Khulnasoft.Login" class="com.khulnasoft.intellij.auth.LoginAction"/>
+            <action id="Khulnasoft.Logout" class="com.khulnasoft.intellij.auth.LogoutAction"/>
+            <separator/>
+            <action id="Khulnasoft.EnableGlobally" class="com.khulnasoft.intellij.auth.EnableKhulnasoftAction"/>
+            <action id="Khulnasoft.DisableGlobally" class="com.khulnasoft.intellij.auth.DisableKhulnasoftAction"/>
+        </group>
+    </actions>
+
+</idea-plugin>

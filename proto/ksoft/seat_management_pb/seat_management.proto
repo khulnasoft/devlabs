@@ -1,0 +1,33 @@
+// Copyright KhulnaSoft, Ltd.
+
+syntax = "proto3";
+
+package ksoft.seat_management_pb;
+
+import "../khulnasoft_common/khulnasoft_common.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/khulnasoft/devlabs/proto/ksoft/seat_management_pb";
+
+service SeatManagementService {
+  rpc GetUserStatus(GetUserStatusRequest) returns (GetUserStatusResponse) {}
+  rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse) {}
+}
+
+message GetUserStatusRequest {
+  ksoft.khulnasoft_common.Metadata metadata = 1;
+}
+
+message GetUserStatusResponse {
+  ksoft.khulnasoft_common.UserStatus user_status = 1;
+}
+
+
+message RegisterUserRequest {
+  string firebase_id_token = 1 [json_name = "firebase_id_token"];
+}
+
+message RegisterUserResponse {
+  string api_key = 1 [json_name = "api_key"];
+  string name = 2 [json_name = "name"];
+}
