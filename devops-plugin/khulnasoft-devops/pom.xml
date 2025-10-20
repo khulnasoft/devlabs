@@ -132,7 +132,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>junit</artifactId>
-      <version>1166.va_436e268e972</version>
+      <version>1369.v15da_00283f06</version>
       <optional>true</optional><!-- from jenkins-core detached-plugins -->
     </dependency>
     <dependency>
@@ -205,7 +205,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>script-security</artifactId>
-      <version>1229.v4880b_b_e905a_6</version>
+      <version>1368.vb_b_402e3547e7</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
