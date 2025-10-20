@@ -105,7 +105,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>junit</artifactId>
-      <version>1166.va_436e268e972</version>
+      <version>1369.v15da_00283f06</version>
       <scope>test</scope>
     </dependency>
     <dependency>
