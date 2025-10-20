@@ -112,6 +112,7 @@ jacocoTestCoverageVerification {
             excludes = [
                     'com.khulnasoft.cover.plugin.CoverageAiPlugin',
                     'com.khulnasoft.cover.plugin.CoverageAiTask',
+                    'com.khulnasoft.cover.plugin.CoverageAiExtension',
                     'sun.util.resources.cldr.provider.CLDRLocaleDataMetaInfo'
             ]
             element = 'CLASS'
